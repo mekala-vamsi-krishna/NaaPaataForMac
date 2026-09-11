@@ -39,6 +39,16 @@ final class MusicLibraryViewModel: ObservableObject {
             self.errorMessage = error.localizedDescription
         }
     }
+    
+    func deleteSong(_ song: Song) {
+        do {
+            try libraryService.delete(song)
+            songs.removeAll { $0.id == song.id }
+            albums = Self.groupAlbums(from: songs)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 
     func refresh() async {
         await loadLibrary()

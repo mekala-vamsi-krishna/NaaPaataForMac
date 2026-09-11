@@ -11,7 +11,7 @@ import AVFoundation
 protocol MusicLibraryServiceProtocol {
     /// Scans the library folder and returns a sorted list of songs.
     func loadLibrary() async throws -> [Song]
-    /// The root folder of the library, for UI purposes.
+    func delete(_ song: Song) throws
     var libraryFolderURL: URL { get }
 }
 
@@ -51,6 +51,11 @@ final class MusicLibraryService: MusicLibraryServiceProtocol {
                 $0.title.localizedStandardCompare($1.title) == .orderedAscending
             }
         }
+    }
+    
+    func delete(_ song: Song) throws {
+        var resultingURL: NSURL?
+        try FileManager.default.trashItem(at: song.url, resultingItemURL: &resultingURL)
     }
 
     // MARK: - File discovery

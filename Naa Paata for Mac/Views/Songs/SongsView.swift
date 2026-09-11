@@ -61,12 +61,10 @@ struct SongsView: View {
 
     private var songList: some View {
         List(displayedSongs) { song in
-            SongRowView(song: song)
+            SongRowView(song: song, onDelete: viewModel.deleteSong)
         }
         .listStyle(.inset)
-        .safeAreaInset(edge: .top, spacing: 0) {
-            headerBar
-        }
+        .safeAreaInset(edge: .top, spacing: 0) { headerBar }
     }
 
     // MARK: - Header (Play All / Shuffle All / Sort)
