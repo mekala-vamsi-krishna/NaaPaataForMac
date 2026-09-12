@@ -37,11 +37,11 @@ struct SongInfoView: View {
                     .lineLimit(2)
                 Text(song.artist)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppColor.textSecondary)
                     .lineLimit(1)
                 Text(song.album)
                     .font(.caption)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(AppColor.textTertiary)
                     .lineLimit(1)
             }
 

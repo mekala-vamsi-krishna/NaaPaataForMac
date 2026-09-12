@@ -1,19 +1,30 @@
-//
-//  AlbumsView.swift
-//  NaaPaataForMac
-//
-//  Created by Mekala Vamsi Krishna on 9/11/26.
-//
-
+// Views/Albums/AlbumsView.swift
 import SwiftUI
 
 struct AlbumsView: View {
 
     @ObservedObject var viewModel: MusicLibraryViewModel
 
+    @State private var searchText = ""
+    @State private var sortOption: AlbumSortOption = .titleAscending
+    @AppStorage("albums.sortOption") private var storedSortRawValue = AlbumSortOption.titleAscending.rawValue
+
     private let columns = [
         GridItem(.adaptive(minimum: 170, maximum: 220), spacing: 22)
     ]
+
+    private var displayedAlbums: [Album] {
+        let filtered: [Album]
+        if searchText.isEmpty {
+            filtered = viewModel.albums
+        } else {
+            filtered = viewModel.albums.filter {
+                $0.title.localizedCaseInsensitiveContains(searchText) ||
+                $0.artist.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+        return filtered.sorted(by: sortOption.areInIncreasingOrder)
+    }
 
     var body: some View {
         Group {
@@ -25,23 +36,84 @@ struct AlbumsView: View {
                     actionTitle: "Open Library Folder",
                     action: viewModel.revealLibraryInFinder
                 )
+            } else if displayedAlbums.isEmpty {
+                EmptyStateView(
+                    title: "No Results",
+                    systemImage: "magnifyingglass",
+                    message: "No albums match “\(searchText)”."
+                )
             } else {
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: 24) {
-                        ForEach(viewModel.albums) { album in
-                            NavigationLink(value: album) {
-                                AlbumCardView(album: album)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(22)
-                }
+                albumGrid
             }
         }
         .navigationTitle("Albums")
+        .searchable(text: $searchText, placement: .toolbar, prompt: "Search albums")
         .navigationDestination(for: Album.self) { album in
             AlbumDetailView(album: album)
         }
+        .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+        .onAppear {
+            sortOption = AlbumSortOption(rawValue: storedSortRawValue) ?? .titleAscending
+        }
+        .onChange(of: sortOption) { _, newValue in
+            storedSortRawValue = newValue.rawValue
+        }
+    }
+
+    // MARK: - Grid + header
+    
+    private var albumGrid: some View {
+        ScrollView {
+            LazyVGrid(columns: columns, spacing: 24) {
+                ForEach(displayedAlbums) { album in
+                    NavigationLink(value: album) {
+                        AlbumCardView(album: album)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(22)
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            headerBar
+        }
+    }
+
+    // MARK: - Header bar
+
+    private var headerBar: some View {
+        HStack(spacing: 10) {
+
+            Spacer()
+
+            sortMenu
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(AppColor.surface)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(AppColor.separator)
+                .frame(height: 1)
+        }
+    }
+
+    // MARK: - Sort menu
+
+    private var sortMenu: some View {
+        Menu {
+            Picker("Sort By", selection: $sortOption) {
+                ForEach(AlbumSortOption.allCases) { option in
+                    Label(option.title, systemImage: option.systemImage)
+                        .tag(option)
+                }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Label("Sort", systemImage: "arrow.up.arrow.down")
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help("Sort albums")
     }
 }

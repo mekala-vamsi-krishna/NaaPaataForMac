@@ -18,14 +18,15 @@ struct EmptyStateView: View {
         VStack(spacing: 14) {
             Image(systemName: systemImage)
                 .font(.system(size: 52, weight: .light))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppColor.textSecondary)
 
             Text(title)
                 .font(.title2.weight(.semibold))
+                .foregroundStyle(AppColor.textPrimary)
 
             Text(message)
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppColor.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 380)
 

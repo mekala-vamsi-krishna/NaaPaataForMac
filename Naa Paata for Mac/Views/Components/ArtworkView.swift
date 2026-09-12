@@ -28,21 +28,16 @@ struct ArtworkView: View {
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.08))
+                .strokeBorder(AppColor.primary.opacity(0.08))
         )
     }
 
     private var placeholder: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color.accentColor.opacity(0.35),
-                         Color.accentColor.opacity(0.12)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            AppColor.brandGradient
             Image(systemName: "music.note")
                 .font(.system(size: size * 0.42, weight: .light))
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(AppColor.onPrimary.opacity(0.9))
         }
     }
 }

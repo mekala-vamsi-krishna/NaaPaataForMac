@@ -17,6 +17,10 @@ struct Album: Identifiable, Hashable {
         songs.first(where: { $0.artworkData != nil })?.artworkData
     }
 
+    var mostRecentDateAdded: Date {
+        songs.map(\.dateAdded).max() ?? .distantPast
+    }
+    
     var trackCount: Int { songs.count }
     var totalDuration: TimeInterval { songs.compactMap(\.duration).reduce(0, +) }
 }

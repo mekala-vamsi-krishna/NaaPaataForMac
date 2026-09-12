@@ -36,12 +36,12 @@ struct AlbumDetailView: View {
 
                 Text(album.artist)
                     .font(.title3)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppColor.textSecondary)
                     .lineLimit(1)
 
                 Text(subtitleText)
                     .font(.subheadline)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(AppColor.textSecondary)
 
                 Spacer(minLength: 8)
 

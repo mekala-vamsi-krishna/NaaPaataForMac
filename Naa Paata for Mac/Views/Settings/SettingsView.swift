@@ -17,7 +17,7 @@ struct SettingsView: View {
                 LabeledContent("Folder") {
                     Text(viewModel.libraryFolderURL.path)
                         .font(.callout.monospaced())
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppColor.textSecondary)
                         .textSelection(.enabled)
                         .lineLimit(2)
                         .truncationMode(.middle)

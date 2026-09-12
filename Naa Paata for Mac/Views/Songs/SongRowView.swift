@@ -21,10 +21,11 @@ struct SongRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(song.title)
                     .font(.body)
+                    .foregroundStyle(AppColor.textPrimary)
                     .lineLimit(1)
                 Text(song.artist)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppColor.textSecondary)
                     .lineLimit(1)
             }
 
@@ -32,13 +33,13 @@ struct SongRowView: View {
 
             Text(song.album)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppColor.textSecondary)
                 .lineLimit(1)
                 .frame(maxWidth: 220, alignment: .trailing)
 
             Text(song.formattedDuration)
                 .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppColor.textSecondary)
                 .frame(width: 52, alignment: .trailing)
         }
         .padding(.vertical, 4)
@@ -99,6 +100,7 @@ struct SongRowView: View {
             isConfirmingDelete = true
         } label: {
             Label("Delete", systemImage: "trash")
+                .foregroundStyle(AppColor.danger)
         }
     }
 }

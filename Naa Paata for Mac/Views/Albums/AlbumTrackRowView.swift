@@ -15,7 +15,7 @@ struct AlbumTrackRowView: View {
         HStack(spacing: 12) {
             Text("\(trackNumber)")
                 .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppColor.textSecondary)
                 .frame(width: 24, alignment: .trailing)
 
             ArtworkView(data: song.artworkData, size: 36, cornerRadius: 5)
@@ -23,10 +23,11 @@ struct AlbumTrackRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(song.title)
                     .font(.body)
+                    .foregroundStyle(AppColor.textPrimary)
                     .lineLimit(1)
                 Text(song.artist)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppColor.textSecondary)
                     .lineLimit(1)
             }
 
@@ -34,7 +35,7 @@ struct AlbumTrackRowView: View {
 
             Text(song.formattedDuration)
                 .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppColor.textSecondary)
                 .frame(width: 52, alignment: .trailing)
         }
         .padding(.vertical, 8)

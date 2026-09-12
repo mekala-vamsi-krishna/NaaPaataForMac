@@ -59,7 +59,7 @@ struct HomeView: View {
                     .lineLimit(1)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(AppColor.textSecondary)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
         }

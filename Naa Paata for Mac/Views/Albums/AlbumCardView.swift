@@ -18,10 +18,11 @@ struct AlbumCardView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(album.title)
                     .font(.headline)
+                    .foregroundStyle(AppColor.textPrimary)
                     .lineLimit(1)
                 Text("\(album.trackCount) song\(album.trackCount == 1 ? "" : "s")")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(AppColor.textTertiary)
             }
         }
         .help("\(album.title) — \(album.artist)")

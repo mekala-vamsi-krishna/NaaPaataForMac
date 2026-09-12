@@ -95,8 +95,12 @@ struct SongsView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(.bar)
-        .overlay(alignment: .bottom) { Divider() }
+        .background(AppColor.surface)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(AppColor.separator)
+                .frame(height: 1)
+        }
     }
 
     // MARK: - Sort menu
