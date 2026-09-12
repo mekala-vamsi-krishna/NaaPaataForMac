@@ -52,7 +52,7 @@ struct SongsView: View {
         .onAppear {
             sortOption = SongSortOption(rawValue: storedSortRawValue) ?? .titleAscending
         }
-        .onChange(of: sortOption) { newValue in
+        .onChange(of: sortOption) { _, newValue in
             storedSortRawValue = newValue.rawValue
         }
     }
