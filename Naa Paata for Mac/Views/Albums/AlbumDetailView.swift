@@ -10,6 +10,7 @@ import SwiftUI
 struct AlbumDetailView: View {
 
     let album: Album
+    @ObservedObject var viewModel: MusicLibraryViewModel
 
     var body: some View {
         ScrollView {
@@ -80,7 +81,11 @@ struct AlbumDetailView: View {
         VStack(spacing: 0) {
             Divider()
             ForEach(Array(album.songs.enumerated()), id: \.element.id) { index, song in
-                AlbumTrackRowView(trackNumber: index + 1, song: song)
+                AlbumTrackRowView(
+                    trackNumber: index + 1,
+                    song: song,
+                    onSelect: { viewModel.play($0, in: album.songs) }
+                )
                 if index < album.songs.count - 1 {
                     Divider().padding(.leading, 60)
                 }

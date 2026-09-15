@@ -9,11 +9,14 @@ import SwiftUI
 
 struct SongRowView: View {
     let song: Song
+    var onSelect: (Song) -> Void = { _ in }
     var onDelete: (Song) -> Void = { _ in }
     
     @State private var isShowingInfo = false
     @State private var isConfirmingDelete = false
 
+    var isSelected: Bool = false
+    
     var body: some View {
         HStack(spacing: 12) {
             ArtworkView(data: song.artworkData, size: 36, cornerRadius: 5)
@@ -44,6 +47,7 @@ struct SongRowView: View {
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
+        .onTapGesture { onSelect(song) }
         .contextMenu { contextMenu }
         .sheet(isPresented: $isShowingInfo) {
             SongInfoView(song: song)

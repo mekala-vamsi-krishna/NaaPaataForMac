@@ -4,26 +4,16 @@ import SwiftUI
 struct AlbumsView: View {
 
     @ObservedObject var viewModel: MusicLibraryViewModel
-
-    @State private var searchText = ""
+    
     @State private var sortOption: AlbumSortOption = .titleAscending
     @AppStorage("albums.sortOption") private var storedSortRawValue = AlbumSortOption.titleAscending.rawValue
 
     private let columns = [
-        GridItem(.adaptive(minimum: 170, maximum: 220), spacing: 22)
+        GridItem(.adaptive(minimum: 170, maximum: 220), spacing: 22, alignment: .leading)
     ]
 
     private var displayedAlbums: [Album] {
-        let filtered: [Album]
-        if searchText.isEmpty {
-            filtered = viewModel.albums
-        } else {
-            filtered = viewModel.albums.filter {
-                $0.title.localizedCaseInsensitiveContains(searchText) ||
-                $0.artist.localizedCaseInsensitiveContains(searchText)
-            }
-        }
-        return filtered.sorted(by: sortOption.areInIncreasingOrder)
+        viewModel.albums.sorted(by: sortOption.areInIncreasingOrder)
     }
 
     var body: some View {
@@ -36,20 +26,13 @@ struct AlbumsView: View {
                     actionTitle: "Open Library Folder",
                     action: viewModel.revealLibraryInFinder
                 )
-            } else if displayedAlbums.isEmpty {
-                EmptyStateView(
-                    title: "No Results",
-                    systemImage: "magnifyingglass",
-                    message: "No albums match “\(searchText)”."
-                )
             } else {
                 albumGrid
             }
         }
         .navigationTitle("Albums")
-        .searchable(text: $searchText, placement: .toolbar, prompt: "Search albums")
         .navigationDestination(for: Album.self) { album in
-            AlbumDetailView(album: album)
+            AlbumDetailView(album: album, viewModel: viewModel)
         }
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .onAppear {

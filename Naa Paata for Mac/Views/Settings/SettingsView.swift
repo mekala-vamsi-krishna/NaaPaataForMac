@@ -44,6 +44,5 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .navigationTitle("Settings")
-        .frame(minWidth: 460, minHeight: 320)
     }
 }

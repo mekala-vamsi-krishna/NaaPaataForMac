@@ -8,12 +8,13 @@
 import Foundation
 
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case songs, albums, playlists, settings
+    case search, songs, albums, playlists, settings
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
+        case .search:    return "Search"
         case .songs:     return "Songs"
         case .albums:    return "Albums"
         case .playlists: return "Playlists"
@@ -23,6 +24,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
+        case .search:    return "magnifyingglass"
         case .songs:     return "music.note"
         case .albums:    return "square.stack"
         case .playlists: return "music.note.list"

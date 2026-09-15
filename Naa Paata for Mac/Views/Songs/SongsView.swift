@@ -10,23 +10,12 @@ import SwiftUI
 struct SongsView: View {
 
     @ObservedObject var viewModel: MusicLibraryViewModel
-
-    @State private var searchText = ""
+    
     @State private var sortOption: SongSortOption = .titleAscending
     @AppStorage("songs.sortOption") private var storedSortRawValue = SongSortOption.titleAscending.rawValue
 
     private var displayedSongs: [Song] {
-        let filtered: [Song]
-        if searchText.isEmpty {
-            filtered = viewModel.songs
-        } else {
-            filtered = viewModel.songs.filter {
-                $0.title.localizedCaseInsensitiveContains(searchText) ||
-                $0.artist.localizedCaseInsensitiveContains(searchText) ||
-                $0.album.localizedCaseInsensitiveContains(searchText)
-            }
-        }
-        return filtered.sorted(by: sortOption.areInIncreasingOrder)
+        viewModel.songs.sorted(by: sortOption.areInIncreasingOrder)
     }
 
     var body: some View {
@@ -47,8 +36,7 @@ struct SongsView: View {
             }
         }
         .navigationTitle("Songs")
-        .searchable(text: $searchText, placement: .toolbar, prompt: "Search songs")
-        .toolbar { toolbarContent }
+        .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .onAppear {
             sortOption = SongSortOption(rawValue: storedSortRawValue) ?? .titleAscending
         }
@@ -61,7 +49,11 @@ struct SongsView: View {
 
     private var songList: some View {
         List(displayedSongs) { song in
-            SongRowView(song: song, onDelete: viewModel.deleteSong)
+            SongRowView(
+                song: song,
+                onSelect: { viewModel.play($0, in: displayedSongs) },
+                onDelete: viewModel.deleteSong
+            )
         }
         .listStyle(.inset)
         .safeAreaInset(edge: .top, spacing: 0) { headerBar }
@@ -120,19 +112,5 @@ struct SongsView: View {
         .menuStyle(.borderlessButton)
         .fixedSize()
         .help("Sort songs")
-    }
-
-    // MARK: - Toolbar
-
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            Button {
-                Task { await viewModel.refresh() }
-            } label: {
-                Label("Refresh", systemImage: "arrow.clockwise")
-            }
-            .disabled(viewModel.isLoading)
-        }
     }
 }

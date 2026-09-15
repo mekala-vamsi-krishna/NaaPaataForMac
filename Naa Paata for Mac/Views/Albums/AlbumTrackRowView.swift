@@ -10,6 +10,7 @@ import SwiftUI
 struct AlbumTrackRowView: View {
     let trackNumber: Int
     let song: Song
+    var onSelect: (Song) -> Void = { _ in }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -40,5 +41,6 @@ struct AlbumTrackRowView: View {
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())
+        .onTapGesture { onSelect(song) }
     }
 }
