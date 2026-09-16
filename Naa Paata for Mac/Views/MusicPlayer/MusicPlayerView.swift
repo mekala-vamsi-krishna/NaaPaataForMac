@@ -173,7 +173,7 @@ struct MusicPlayerView: View {
             )
             .frame(
                 width: playerWidth - horizontalPadding * 2,
-                height: 14
+                height: 20
             )
 
             HStack {
@@ -195,40 +195,42 @@ struct MusicPlayerView: View {
 
     private var backwardForwardPlayControls: some View {
         HStack(spacing: 22) {
-            backwardForwardButton(systemName: "backward.fill") {
-                viewModel.playPrevious()
-            }
+            NudgeButton(
+                systemName: "backward.fill",
+                direction: -1,
+                size: controlButtonSize,
+                action: viewModel.playPrevious
+            )
 
-            Button {
-                viewModel.togglePlayPause()
-            } label: {
-                Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 21, weight: .semibold))
-                    .foregroundStyle(.black)
-                    .frame(width: playButtonSize, height: playButtonSize)
-                    .background(Circle().fill(.white))
-                    .shadow(color: .black.opacity(0.3), radius: 8, y: 3)
-            }
-            .buttonStyle(.plain)
+            playPauseButton
 
-            backwardForwardButton(systemName: "forward.fill") {
-                viewModel.playNext()
-            }
+            NudgeButton(
+                systemName: "forward.fill",
+                direction: 1,
+                size: controlButtonSize,
+                action: viewModel.playNext
+            )
         }
         .frame(width: playerWidth)
     }
 
-    private func backwardForwardButton(
-        systemName: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 20, weight: .medium))
+    // MARK: - Play / Pause
+
+    private var playPauseButton: some View {
+        Button {
+            viewModel.togglePlayPause()
+        } label: {
+            Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
+                .font(.system(size: 26, weight: .medium))
                 .foregroundStyle(.white)
-                .frame(width: controlButtonSize, height: controlButtonSize)
+                .frame(width: playButtonSize, height: playButtonSize)
+                .contentTransition(.symbolEffect(.replace))
         }
         .buttonStyle(.plain)
+        .animation(
+            .spring(response: 0.35, dampingFraction: 0.6),
+            value: viewModel.isPlaying
+        )
     }
 
     // MARK: - Utility Controls
@@ -309,5 +311,43 @@ struct MusicPlayerView: View {
     private var elapsedString: String {
         let total = Int(viewModel.elapsed.rounded())
         return String(format: "%d:%02d", total / 60, total % 60)
+    }
+}
+
+// MARK: - Nudge Button
+
+private struct NudgeButton: View {
+
+    let systemName: String
+    let direction: CGFloat          // -1 = left, +1 = right
+    let size: CGFloat
+    let action: () -> Void
+
+    @State private var offsetX: CGFloat = 0
+
+    var body: some View {
+        Button {
+            action()
+            nudge()
+        } label: {
+            Image(systemName: systemName)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(.white)
+                .frame(width: size, height: size)
+                .offset(x: offsetX)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func nudge() {
+        withAnimation(.easeOut(duration: 0.08)) {
+            offsetX = direction * 5
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) {
+                offsetX = 0
+            }
+        }
     }
 }
