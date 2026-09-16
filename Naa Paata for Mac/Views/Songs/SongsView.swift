@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct SongsView: View {
-
+    @EnvironmentObject private var router: AppRouter
+    
     @ObservedObject var viewModel: MusicLibraryViewModel
     
     @State private var sortOption: SongSortOption = .titleAscending
@@ -53,7 +54,12 @@ struct SongsView: View {
                 song: song,
                 onSelect: { viewModel.play($0, in: displayedSongs) },
                 onDelete: viewModel.deleteSong,
-                onPlayNext: viewModel.enqueueNext
+                onPlayNext: viewModel.enqueueNext,
+                onGoToAlbum: { song in
+                    if let album = viewModel.album(for: song) {
+                        router.push(album)
+                    }
+                }
             )
         }
         .listStyle(.inset)

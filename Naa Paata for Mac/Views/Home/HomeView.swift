@@ -11,24 +11,22 @@ struct HomeView: View {
 
     @ObservedObject var viewModel: MusicLibraryViewModel
 
+    @StateObject private var router = AppRouter()
+
     @State private var selection: SidebarItem? = .songs
     @State private var showPlayer = true
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            // MARK: - LEFT: Sidebar
             sidebar
         } detail: {
-            // MARK: - CENTER: Main Content
             content
         }
-        // MARK: - RIGHT: Music Player
         .inspector(isPresented: $showPlayer) {
             MusicPlayerView(viewModel: viewModel)
                 .inspectorColumnWidth(min: 320, ideal: 320, max: 320)
         }
-        
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -45,15 +43,18 @@ struct HomeView: View {
                         showPlayer.toggle()
                     }
                 } label: {
-                    Label("Toggle Player", systemImage: "music.note")
+                    Label("Toggle Player", systemImage: "sidebar.right")
                 }
                 .help(showPlayer ? "Hide Player" : "Show Player")
             }
         }
-        
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 1100, minHeight: 650)
         .toolbarBackground(.hidden, for: .windowToolbar)
+
+        .onChange(of: selection) { _, _ in
+            router.popToRoot()
+        }
 
         .task {
             if viewModel.songs.isEmpty {
@@ -67,12 +68,8 @@ struct HomeView: View {
                 get: { viewModel.errorMessage != nil },
                 set: { if !$0 { viewModel.errorMessage = nil } }
             ),
-            actions: {
-                Button("OK", role: .cancel) {}
-            },
-            message: {
-                Text(viewModel.errorMessage ?? "")
-            }
+            actions: { Button("OK", role: .cancel) {} },
+            message: { Text(viewModel.errorMessage ?? "") }
         )
     }
 
@@ -89,8 +86,6 @@ struct HomeView: View {
             sidebarFooter
         }
     }
-
-    // MARK: - Sidebar Footer
 
     private var sidebarFooter: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -114,7 +109,7 @@ struct HomeView: View {
 
     @ViewBuilder
     private var content: some View {
-        NavigationStack {
+        NavigationStack(path: $router.path) {
             switch selection ?? .songs {
             case .search:
                 SearchView(viewModel: viewModel)
@@ -131,6 +126,10 @@ struct HomeView: View {
             case .settings:
                 SettingsView(viewModel: viewModel)
             }
+        }
+        .environmentObject(router)
+        .navigationDestination(for: Album.self) { album in
+            AlbumDetailView(album: album, viewModel: viewModel)
         }
     }
 }

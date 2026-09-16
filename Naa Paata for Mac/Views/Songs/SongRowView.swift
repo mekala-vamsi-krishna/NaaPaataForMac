@@ -12,6 +12,7 @@ struct SongRowView: View {
     var onSelect: (Song) -> Void = { _ in }
     var onDelete: (Song) -> Void = { _ in }
     var onPlayNext: (Song) -> Void = { _ in }
+    var onGoToAlbum: (Song) -> Void = { _ in }
     
     @State private var isShowingInfo = false
     @State private var isConfirmingDelete = false
@@ -88,7 +89,7 @@ struct SongRowView: View {
         Divider()
 
         Button {
-            // TODO: Go to album wiring
+            onGoToAlbum(song)
         } label: {
             Label("Go to Album", systemImage: "square.stack")
         }

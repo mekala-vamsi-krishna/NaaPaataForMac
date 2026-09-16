@@ -155,6 +155,11 @@ final class MusicLibraryViewModel: ObservableObject {
 
         self.currentIndex = adjustedIndex
     }
+    
+    /// Returns the album that contains `song`, matched by the song's album name.
+    func album(for song: Song) -> Album? {
+        albums.first { $0.title == song.album }
+    }
 
     // MARK: - Private
 

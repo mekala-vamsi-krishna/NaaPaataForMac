@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct SearchView: View {
+    @EnvironmentObject private var router: AppRouter
 
     @ObservedObject var viewModel: MusicLibraryViewModel
 
@@ -205,7 +206,12 @@ struct SearchView: View {
                     song: song,
                     onSelect: { viewModel.play($0, in: filteredSongs) },
                     onDelete: viewModel.deleteSong,
-                    onPlayNext: viewModel.enqueueNext
+                    onPlayNext: viewModel.enqueueNext,
+                    onGoToAlbum: { song in
+                        if let album = viewModel.album(for: song) {
+                            router.push(album)
+                        }
+                    }
                 )
             }
             .listStyle(.inset)
