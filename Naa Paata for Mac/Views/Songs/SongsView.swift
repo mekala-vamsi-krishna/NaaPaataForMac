@@ -52,7 +52,8 @@ struct SongsView: View {
             SongRowView(
                 song: song,
                 onSelect: { viewModel.play($0, in: displayedSongs) },
-                onDelete: viewModel.deleteSong
+                onDelete: viewModel.deleteSong,
+                onPlayNext: viewModel.enqueueNext
             )
         }
         .listStyle(.inset)

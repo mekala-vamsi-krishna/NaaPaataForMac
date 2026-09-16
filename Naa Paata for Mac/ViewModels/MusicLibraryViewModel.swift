@@ -128,6 +128,33 @@ final class MusicLibraryViewModel: ObservableObject {
     func seek(toProgress progress: Double) {
         playerService.seek(toProgress: progress)
     }
+    
+    /// Inserts `song` into the queue immediately after the currently playing track.
+    /// It will play when the current song finishes, or when the user hits Next.
+    /// If nothing is playing, the song plays immediately.
+    func enqueueNext(_ song: Song) {
+        // Nothing playing → play it right away
+        guard let currentIndex else {
+            play(song, in: [song])
+            return
+        }
+
+        // Already playing — no-op
+        guard queue[currentIndex].id != song.id else { return }
+
+        // If the song is already queued elsewhere, remove it first to avoid duplicates
+        var adjustedIndex = currentIndex
+        if let existing = queue.firstIndex(where: { $0.id == song.id }) {
+            queue.remove(at: existing)
+            if existing < currentIndex { adjustedIndex -= 1 }
+        }
+
+        // Insert directly after the current track
+        let insertAt = min(adjustedIndex + 1, queue.count)
+        queue.insert(song, at: insertAt)
+
+        self.currentIndex = adjustedIndex
+    }
 
     // MARK: - Private
 

@@ -11,6 +11,7 @@ struct SongRowView: View {
     let song: Song
     var onSelect: (Song) -> Void = { _ in }
     var onDelete: (Song) -> Void = { _ in }
+    var onPlayNext: (Song) -> Void = { _ in }
     
     @State private var isShowingInfo = false
     @State private var isConfirmingDelete = false
@@ -73,7 +74,7 @@ struct SongRowView: View {
     @ViewBuilder
     private var contextMenu: some View {
         Button {
-            // TODO: Play next wiring
+            onPlayNext(song)
         } label: {
             Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
         }

@@ -204,7 +204,8 @@ struct SearchView: View {
                 SongRowView(
                     song: song,
                     onSelect: { viewModel.play($0, in: filteredSongs) },
-                    onDelete: viewModel.deleteSong
+                    onDelete: viewModel.deleteSong,
+                    onPlayNext: viewModel.enqueueNext
                 )
             }
             .listStyle(.inset)
