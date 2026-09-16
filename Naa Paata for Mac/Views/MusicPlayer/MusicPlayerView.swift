@@ -11,9 +11,7 @@ import AppKit
 struct MusicPlayerView: View {
 
     @ObservedObject var viewModel: MusicLibraryViewModel
-
-    @State private var isShuffled = false
-    @State private var repeatMode: RepeatMode = .off
+    
     @State private var isFavourite = false
 
     private var song: Song? {
@@ -239,16 +237,16 @@ struct MusicPlayerView: View {
         HStack(spacing: 0) {
             utilityButton(
                 systemName: "shuffle",
-                isActive: isShuffled
+                isActive: viewModel.isShuffled
             ) {
-                isShuffled.toggle()
+                viewModel.toggleShuffle()
             }
 
             utilityButton(
-                systemName: repeatMode.systemImage,
-                isActive: repeatMode != .off
+                systemName: viewModel.repeatMode.systemImage,
+                isActive: viewModel.repeatMode != .off
             ) {
-                repeatMode = repeatMode.next
+                viewModel.cycleRepeatMode()
             }
 
             utilityButton(

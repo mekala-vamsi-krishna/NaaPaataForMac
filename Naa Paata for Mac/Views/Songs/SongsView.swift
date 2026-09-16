@@ -73,22 +73,22 @@ struct SongsView: View {
     private var headerBar: some View {
         HStack(spacing: 10) {
             Button {
-                // TODO: Playback wiring
+                viewModel.playAll(displayedSongs)
             } label: {
                 Label("Play All", systemImage: "play.fill")
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .help("Play all songs (coming soon)")
+            .help("Play all songs")
 
             Button {
-                // TODO: Playback wiring
+                viewModel.shuffleAll(displayedSongs)
             } label: {
                 Label("Shuffle All", systemImage: "shuffle")
             }
             .buttonStyle(.bordered)
             .controlSize(.large)
-            .help("Shuffle all songs (coming soon)")
+            .help("Shuffle all songs")
 
             Spacer()
 

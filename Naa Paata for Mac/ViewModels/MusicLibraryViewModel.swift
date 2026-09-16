@@ -9,6 +9,17 @@ import Foundation
 import Combine
 import AppKit
 
+enum RepeatMode: CaseIterable {
+    case off, all, one
+
+    var systemImage: String {
+        switch self {
+        case .off, .all: return "repeat"
+        case .one: return "repeat.1"
+        }
+    }
+}
+
 @MainActor
 final class MusicLibraryViewModel: ObservableObject {
 
@@ -23,14 +34,19 @@ final class MusicLibraryViewModel: ObservableObject {
     @Published private(set) var isPlaying = false
     @Published private(set) var progress: Double = 0
     @Published private(set) var elapsed: TimeInterval = 0
+    @Published private(set) var isShuffled = false
+    @Published private(set) var repeatMode: RepeatMode = .off
 
+    /// Current playback order. May be shuffled or in source order.
     private var queue: [Song] = []
+    /// The unshuffled source list, kept so shuffle can be toggled off.
+    private var originalQueue: [Song] = []
     private var currentIndex: Int?
 
     private let libraryService: MusicLibraryServiceProtocol
     private let playerService: AudioPlayerServiceProtocol
     private var cancellables = Set<AnyCancellable>()
-    
+
     var libraryFolderURL: URL { libraryService.libraryFolderURL }
 
     init(
@@ -42,10 +58,11 @@ final class MusicLibraryViewModel: ObservableObject {
         bindPlayer()
     }
 
+    // MARK: - Library
+
     func loadLibrary() async {
         isLoading = true
         defer { isLoading = false }
-
         do {
             let songs = try await libraryService.loadLibrary()
             self.songs = songs
@@ -54,52 +71,86 @@ final class MusicLibraryViewModel: ObservableObject {
             self.errorMessage = error.localizedDescription
         }
     }
-    
+
+    func refresh() async {
+        await loadLibrary()
+    }
+
     func deleteSong(_ song: Song) {
         do {
             try libraryService.delete(song)
             songs.removeAll { $0.id == song.id }
             albums = Self.groupAlbums(from: songs)
+            originalQueue.removeAll { $0.id == song.id }
+            queue.removeAll { $0.id == song.id }
+
+            if currentSong?.id == song.id {
+                playerService.pause()
+                currentSong = nil
+                queue = []
+                originalQueue = []
+                currentIndex = nil
+            } else if let idx = currentIndex {
+                currentIndex = min(idx, max(queue.count - 1, 0))
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
-    }
-
-    func refresh() async {
-        await loadLibrary()
     }
 
     func revealLibraryInFinder() {
         NSWorkspace.shared.activateFileViewerSelecting([libraryService.libraryFolderURL])
     }
 
-    // MARK: - Grouping
-
-    private static func groupAlbums(from songs: [Song]) -> [Album] {
-        Dictionary(grouping: songs, by: { $0.album })
-            .map { key, value in
-                Album(
-                    id: key,
-                    title: key,
-                    artist: value.first?.artist ?? "Unknown Artist",
-                    songs: value.sorted {
-                        $0.title.localizedStandardCompare($1.title) == .orderedAscending
-                    }
-                )
-            }
-            .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+    func album(for song: Song) -> Album? {
+        albums.first { $0.title == song.album }
     }
 
-    // MARK: - Playback
+    // MARK: - Playback entry points
 
-    /// Plays `song` and sets the full `songs` array as the queue,
-    /// so playback continues through the list from that point.
+    /// Play the entire list from track 1, linearly. Repeat → `.all`.
+    func playAll(_ songs: [Song]) {
+        guard let first = songs.first else { return }
+        isShuffled = false
+        repeatMode = .all
+        originalQueue = songs
+        queue = songs
+        currentIndex = 0
+        startPlayback(of: first)
+    }
+
+    /// Play the entire list in random order. Shuffle → on, repeat → `.all`.
+    func shuffleAll(_ songs: [Song]) {
+        guard !songs.isEmpty else { return }
+        let shuffled = songs.shuffled()
+        isShuffled = true
+        repeatMode = .all
+        originalQueue = songs
+        queue = shuffled
+        currentIndex = 0
+        startPlayback(of: shuffled[0])
+    }
+
+    /// Play `song` from `songs`. Respects the current shuffle state.
+    /// Repeat → `.all` so the list keeps going after the last track.
     func play(_ song: Song, in songs: [Song]) {
         guard !songs.isEmpty else { return }
-        queue = songs
-        currentIndex = songs.firstIndex(where: { $0.id == song.id })
+        originalQueue = songs
+
+        if isShuffled {
+            let others = songs.filter { $0.id != song.id }.shuffled()
+            queue = [song] + others
+            currentIndex = 0
+        } else {
+            queue = songs
+            currentIndex = songs.firstIndex(where: { $0.id == song.id }) ?? 0
+        }
+
+        repeatMode = .all
         startPlayback(of: song)
     }
+
+    // MARK: - Transport
 
     func togglePlayPause() {
         guard currentSong != nil else { return }
@@ -107,66 +158,146 @@ final class MusicLibraryViewModel: ObservableObject {
     }
 
     func playNext() {
-        guard let currentIndex else { return }
-        let nextIndex = currentIndex + 1
-        guard nextIndex < queue.count else {
-            playerService.pause()
+        guard currentIndex != nil, !queue.isEmpty else { return }
+
+        // Repeat one — restart current song from the beginning.
+        if repeatMode == .one {
+            playerService.seek(toProgress: 0)
             return
         }
-        self.currentIndex = nextIndex
-        startPlayback(of: queue[nextIndex])
+
+        advanceToNext()
     }
 
     func playPrevious() {
-        guard let currentIndex else { return }
-        let prevIndex = currentIndex - 1
-        guard prevIndex >= 0 else { return }
-        self.currentIndex = prevIndex
-        startPlayback(of: queue[prevIndex])
+        guard currentIndex != nil, !queue.isEmpty else { return }
+
+        // Repeat one — restart current song from the beginning.
+        if repeatMode == .one {
+            playerService.seek(toProgress: 0)
+            return
+        }
+
+        goToPrevious()
     }
 
     func seek(toProgress progress: Double) {
         playerService.seek(toProgress: progress)
     }
-    
-    /// Inserts `song` into the queue immediately after the currently playing track.
-    /// It will play when the current song finishes, or when the user hits Next.
-    /// If nothing is playing, the song plays immediately.
+
+    /// Insert `song` immediately after the currently playing track.
     func enqueueNext(_ song: Song) {
-        // Nothing playing → play it right away
         guard let currentIndex else {
             play(song, in: [song])
             return
         }
-
-        // Already playing — no-op
         guard queue[currentIndex].id != song.id else { return }
 
-        // If the song is already queued elsewhere, remove it first to avoid duplicates
         var adjustedIndex = currentIndex
         if let existing = queue.firstIndex(where: { $0.id == song.id }) {
             queue.remove(at: existing)
             if existing < currentIndex { adjustedIndex -= 1 }
         }
 
-        // Insert directly after the current track
         let insertAt = min(adjustedIndex + 1, queue.count)
         queue.insert(song, at: insertAt)
-
         self.currentIndex = adjustedIndex
     }
-    
-    /// Returns the album that contains `song`, matched by the song's album name.
-    func album(for song: Song) -> Album? {
-        albums.first { $0.title == song.album }
+
+    // MARK: - Mode toggles
+
+    func toggleShuffle() {
+        isShuffled.toggle()
+        guard let current = currentSong, let idx = currentIndex else { return }
+
+        if isShuffled {
+            // Keep what's already played, shuffle the rest.
+            let played = Array(queue[0...idx])
+            let upcoming = idx + 1 < queue.count
+                ? Array(queue[(idx + 1)...]).shuffled()
+                : []
+            queue = played + upcoming
+        } else {
+            // Restore source order; current song keeps playing.
+            queue = originalQueue
+            currentIndex = queue.firstIndex(where: { $0.id == current.id })
+        }
+    }
+
+    func cycleRepeatMode() {
+        switch repeatMode {
+        case .off: repeatMode = .all
+        case .all: repeatMode = .one
+        case .one: repeatMode = .off
+        }
+        applyRepeatMode()
     }
 
     // MARK: - Private
+
+    private func advanceToNext() {
+        guard let idx = currentIndex else { return }
+        let nextIdx = idx + 1
+
+        if nextIdx < queue.count {
+            currentIndex = nextIdx
+            startPlayback(of: queue[nextIdx])
+            return
+        }
+
+        // End of queue
+        guard repeatMode == .all else {
+            playerService.pause()
+            return
+        }
+
+        if isShuffled {
+            reshuffleAndRestart()
+        } else {
+            currentIndex = 0
+            startPlayback(of: queue[0])
+        }
+    }
+
+    private func goToPrevious() {
+        guard let idx = currentIndex else { return }
+        let prevIdx = idx - 1
+
+        if prevIdx >= 0 {
+            currentIndex = prevIdx
+            startPlayback(of: queue[prevIdx])
+        } else if let current = currentSong {
+            // At the top — restart current.
+            startPlayback(of: current)
+        }
+    }
+
+    private func reshuffleAndRestart() {
+        var reshuffled = originalQueue.shuffled()
+
+        // Avoid repeating the last song first in the new round.
+        if reshuffled.count > 1,
+           let last = currentSong,
+           reshuffled.first?.id == last.id {
+            reshuffled.swapAt(0, 1)
+        }
+
+        queue = reshuffled
+        currentIndex = 0
+        if let first = reshuffled.first {
+            startPlayback(of: first)
+        }
+    }
+
+    private func applyRepeatMode() {
+        playerService.setLooping(repeatMode == .one)
+    }
 
     private func startPlayback(of song: Song) {
         currentSong = song
         do {
             try playerService.load(url: song.url)
+            applyRepeatMode()
             playerService.play()
         } catch {
             errorMessage = "Could not play \"\(song.title)\"."
@@ -191,7 +322,34 @@ final class MusicLibraryViewModel: ObservableObject {
 
         playerService.trackDidFinishPublisher
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] in self?.playNext() }
+            .sink { [weak self] in self?.handleTrackDidFinish() }
             .store(in: &cancellables)
+    }
+
+    private func handleTrackDidFinish() {
+        switch repeatMode {
+        case .one:
+            // Native looping should prevent this — defensive restart.
+            if let current = currentSong {
+                startPlayback(of: current)
+            }
+        case .all, .off:
+            advanceToNext()
+        }
+    }
+
+    private static func groupAlbums(from songs: [Song]) -> [Album] {
+        Dictionary(grouping: songs, by: { $0.album })
+            .map { key, value in
+                Album(
+                    id: key,
+                    title: key,
+                    artist: value.first?.artist ?? "Unknown Artist",
+                    songs: value.sorted {
+                        $0.title.localizedStandardCompare($1.title) == .orderedAscending
+                    }
+                )
+            }
+            .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
     }
 }

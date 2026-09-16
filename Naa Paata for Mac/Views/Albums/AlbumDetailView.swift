@@ -48,7 +48,7 @@ struct AlbumDetailView: View {
 
                 HStack(spacing: 10) {
                     Button {
-                        // TODO: Playback wiring
+                        viewModel.playAll(album.songs)
                     } label: {
                         Label("Play", systemImage: "play.fill")
                     }
@@ -56,7 +56,7 @@ struct AlbumDetailView: View {
                     .controlSize(.large)
 
                     Button {
-                        // TODO: Playback wiring
+                        viewModel.shuffleAll(album.songs)
                     } label: {
                         Label("Shuffle", systemImage: "shuffle")
                     }
