@@ -52,6 +52,8 @@ struct SongsView: View {
         List(displayedSongs) { song in
             SongRowView(
                 song: song,
+                isCurrentSong: viewModel.currentSong?.id == song.id,
+                isPlaying: viewModel.isPlaying,
                 onSelect: { viewModel.play($0, in: displayedSongs) },
                 onDelete: viewModel.deleteSong,
                 onPlayNext: viewModel.enqueueNext,

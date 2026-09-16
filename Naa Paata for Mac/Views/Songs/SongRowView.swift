@@ -8,26 +8,28 @@
 import SwiftUI
 
 struct SongRowView: View {
+
     let song: Song
+    var isCurrentSong: Bool = false
+    var isPlaying: Bool = false
     var onSelect: (Song) -> Void = { _ in }
     var onDelete: (Song) -> Void = { _ in }
     var onPlayNext: (Song) -> Void = { _ in }
     var onGoToAlbum: (Song) -> Void = { _ in }
-    
+
     @State private var isShowingInfo = false
     @State private var isConfirmingDelete = false
 
-    var isSelected: Bool = false
-    
     var body: some View {
         HStack(spacing: 12) {
-            ArtworkView(data: song.artworkData, size: 36, cornerRadius: 5)
+            leadingIndicator
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(song.title)
                     .font(.body)
-                    .foregroundStyle(AppColor.textPrimary)
+                    .foregroundStyle(isCurrentSong ? AppColor.primary : AppColor.textPrimary)
                     .lineLimit(1)
+
                 Text(song.artist)
                     .font(.caption)
                     .foregroundStyle(AppColor.textSecondary)
@@ -67,6 +69,22 @@ struct SongRowView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("The file will be moved to Trash. You can restore it from Finder.")
+        }
+    }
+
+    // MARK: - Leading indicator (artwork or equalizer)
+
+    @ViewBuilder
+    private var leadingIndicator: some View {
+        if isCurrentSong {
+            EqualizerBars(
+                isPlaying: isPlaying,
+                size: 36,
+                color: AppColor.primary
+            )
+            .padding(.horizontal, 6)
+        } else {
+            ArtworkView(data: song.artworkData, size: 36, cornerRadius: 5)
         }
     }
 

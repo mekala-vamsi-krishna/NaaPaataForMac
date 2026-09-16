@@ -84,7 +84,10 @@ struct AlbumDetailView: View {
                 AlbumTrackRowView(
                     trackNumber: index + 1,
                     song: song,
-                    onSelect: { viewModel.play($0, in: album.songs) }
+                    isCurrentSong: viewModel.currentSong?.id == song.id,
+                    isPlaying: viewModel.isPlaying,
+                    onSelect: { viewModel.play($0, in: album.songs) },
+                    onPlayNext: viewModel.enqueueNext
                 )
                 if index < album.songs.count - 1 {
                     Divider().padding(.leading, 60)

@@ -204,6 +204,8 @@ struct SearchView: View {
 
                 SongRowView(
                     song: song,
+                    isCurrentSong: viewModel.currentSong?.id == song.id,
+                    isPlaying: viewModel.isPlaying,
                     onSelect: { viewModel.play($0, in: filteredSongs) },
                     onDelete: viewModel.deleteSong,
                     onPlayNext: viewModel.enqueueNext,
