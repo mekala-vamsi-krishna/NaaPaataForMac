@@ -93,15 +93,17 @@ struct SongRowView: View {
     @ViewBuilder
     private var contextMenu: some View {
         Button {
+            // TODO: Add to playlist wiring
+        } label: {
+            Label("Add to Playlist", systemImage: "text.badge.plus")
+        }
+
+        Divider()
+
+        Button {
             onPlayNext(song)
         } label: {
             Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
-        }
-
-        Button {
-            isShowingInfo = true
-        } label: {
-            Label("Song Info", systemImage: "info.circle")
         }
 
         Divider()
@@ -113,9 +115,15 @@ struct SongRowView: View {
         }
 
         Button {
-            // TODO: Add to playlist wiring
+            NSWorkspace.shared.activateFileViewerSelecting([song.url])
         } label: {
-            Label("Add to Playlist", systemImage: "text.badge.plus")
+            Label("Show in Finder", systemImage: "folder")
+        }
+
+        Button {
+            isShowingInfo = true
+        } label: {
+            Label("Song Info", systemImage: "info.circle")
         }
 
         Divider()
