@@ -13,6 +13,7 @@ struct MusicPlayerView: View {
     @ObservedObject var viewModel: MusicLibraryViewModel
     
     @State private var isFavourite = false
+    @State private var isShowingAddToPlaylist = false
 
     private var song: Song? {
         viewModel.currentSong
@@ -80,6 +81,11 @@ struct MusicPlayerView: View {
             }
             .frame(width: playerWidth)
             .frame(maxHeight: .infinity)
+        }
+        .sheet(isPresented: $isShowingAddToPlaylist) {
+            if let song = viewModel.currentSong {
+                AddToPlaylistSheet(song: song)
+            }
         }
     }
 
@@ -250,10 +256,10 @@ struct MusicPlayerView: View {
             }
 
             utilityButton(
-                systemName: "list.bullet",
+                systemName: "text.badge.plus",
                 isActive: false
             ) {
-
+                isShowingAddToPlaylist = true
             }
 
             utilityButton(
