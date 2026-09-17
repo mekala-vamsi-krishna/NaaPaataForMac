@@ -170,7 +170,7 @@ struct AlbumTrackRowView: View {
         Button {
             NSWorkspace.shared.activateFileViewerSelecting([song.url])
         } label: {
-            Label("Show in Finder", systemImage: "folder")
+            Label("Show in Finder", systemImage: "finder")
         }
 
         Button {

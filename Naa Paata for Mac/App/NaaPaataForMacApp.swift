@@ -31,7 +31,7 @@ struct NaaPaataForMacApp: App {
             HomeView(viewModel: libraryViewModel)
                 .tint(AppColor.primary)
         }
-        .modelContainer(for: Playlist.self)
+        .modelContainer(for: [Playlist.self, FavouriteSong.self])
         .defaultSize(width: 1100, height: 720)
         .windowToolbarStyle(.unified)
     }

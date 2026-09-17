@@ -6,18 +6,26 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct SongsView: View {
-
+    @Environment(\.modelContext) private var modelContext
+    
     @EnvironmentObject private var router: AppRouter
 
     @ObservedObject var viewModel: MusicLibraryViewModel
 
     @State private var sortOption: SongSortOption = .titleAscending
     @AppStorage("songs.sortOption") private var storedSortRawValue = SongSortOption.titleAscending.rawValue
+    
+    @Query private var favourites: [FavouriteSong]
 
     private var displayedSongs: [Song] {
         viewModel.songs.sorted(by: sortOption.areInIncreasingOrder)
+    }
+    
+    private var favouritePaths: Set<String> {
+        Set(favourites.map(\.songPath))
     }
 
     var body: some View {
@@ -57,8 +65,9 @@ struct SongsView: View {
                         song: song,
                         isCurrentSong: viewModel.currentSong?.id == song.id,
                         isPlaying: viewModel.isPlaying,
+                        isFavourite: favouritePaths.contains(song.url.path),
                         onSelect: { viewModel.play($0, in: displayedSongs) },
-                        onDelete: viewModel.deleteSong,
+                        onDelete: { viewModel.deleteSong($0, in: modelContext) },
                         onPlayNext: viewModel.enqueueNext,
                         onGoToAlbum: { song in
                             if let album = viewModel.album(for: song) {

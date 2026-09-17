@@ -94,7 +94,7 @@ struct HomeView: View {
             Button {
                 viewModel.revealLibraryInFinder()
             } label: {
-                Label("Reveal Library in Finder", systemImage: "folder")
+                Label("Reveal Library in Finder", systemImage: "finder")
                     .font(.caption)
                     .lineLimit(1)
             }
@@ -117,7 +117,10 @@ struct HomeView: View {
 
                 case .songs:
                     SongsView(viewModel: viewModel)
-
+                    
+                case .favourites:
+                    FavouritesView(viewModel: viewModel)
+                    
                 case .albums:
                     AlbumsView(viewModel: viewModel)
 

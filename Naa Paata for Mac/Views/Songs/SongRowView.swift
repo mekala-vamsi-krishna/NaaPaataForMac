@@ -13,6 +13,7 @@ struct SongRowView: View {
     let song: Song
     var isCurrentSong: Bool = false
     var isPlaying: Bool = false
+    var isFavourite: Bool = false
     var onSelect: (Song) -> Void = { _ in }
     var onDelete: (Song) -> Void = { _ in }
     var onPlayNext: (Song) -> Void = { _ in }
@@ -24,7 +25,7 @@ struct SongRowView: View {
     @State private var isConfirmingDelete = false
     @State private var addToPlaylistMode: AddToPlaylistMode?
     @State private var isHovering = false
-
+    
     /// Horizontal inset applied inside the row so content lines up with the
     /// Songs header, while the hover background spans the full row width.
     private let contentInset: CGFloat = 16
@@ -34,16 +35,26 @@ struct SongRowView: View {
             artworkWithHoverOverlay
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(song.title)
-                    .font(.body)
-                    .foregroundStyle(isCurrentSong ? AppColor.primary : AppColor.textPrimary)
-                    .lineLimit(1)
+                HStack(spacing: 5) {
+                    Text(song.title)
+                        .font(.body)
+                        .foregroundStyle(isCurrentSong ? AppColor.primary : AppColor.textPrimary)
+                        .lineLimit(1)
+
+                    if isFavourite {
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 9))
+                            .foregroundStyle(AppColor.primary)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                }
 
                 Text(song.artist)
                     .font(.caption)
                     .foregroundStyle(AppColor.textSecondary)
                     .lineLimit(1)
             }
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isFavourite)
 
             Spacer(minLength: 16)
 
@@ -180,7 +191,7 @@ struct SongRowView: View {
         Button {
             NSWorkspace.shared.activateFileViewerSelecting([song.url])
         } label: {
-            Label("Show in Finder", systemImage: "folder")
+            Label("Show in Finder", systemImage: "finder")
         }
 
         Button {

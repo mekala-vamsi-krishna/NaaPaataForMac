@@ -26,7 +26,7 @@ struct SettingsView: View {
                 Button {
                     viewModel.revealLibraryInFinder()
                 } label: {
-                    Label("Reveal in Finder", systemImage: "folder")
+                    Label("Reveal in Finder", systemImage: "finder")
                 }
 
                 Button {

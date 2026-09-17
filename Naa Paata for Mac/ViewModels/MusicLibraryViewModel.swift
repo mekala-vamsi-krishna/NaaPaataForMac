@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import AppKit
+import SwiftData
 
 enum RepeatMode: CaseIterable {
     case off, all, one
@@ -76,13 +77,16 @@ final class MusicLibraryViewModel: ObservableObject {
         await loadLibrary()
     }
 
-    func deleteSong(_ song: Song) {
+    func deleteSong(_ song: Song, in context: ModelContext) {
         do {
             try libraryService.delete(song)
             songs.removeAll { $0.id == song.id }
             albums = Self.groupAlbums(from: songs)
             originalQueue.removeAll { $0.id == song.id }
             queue.removeAll { $0.id == song.id }
+
+            // Remove its favourite record, if any.
+            try? FavouritesService(context: context).removeFavourite(song.url)
 
             if currentSong?.id == song.id {
                 playerService.pause()

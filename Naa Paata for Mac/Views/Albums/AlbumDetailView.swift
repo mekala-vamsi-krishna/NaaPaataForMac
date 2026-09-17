@@ -10,6 +10,9 @@ import SwiftUI
 struct AlbumDetailView: View {
 
     let album: Album
+    
+    @Environment(\.modelContext) private var modelContext
+
     @ObservedObject var viewModel: MusicLibraryViewModel
 
     var body: some View {
@@ -92,7 +95,7 @@ struct AlbumDetailView: View {
                     isPlaying: viewModel.isPlaying,
                     onSelect: { viewModel.play($0, in: album.songs) },
                     onPlayNext: viewModel.enqueueNext,
-                    onDelete: viewModel.deleteSong
+                    onDelete: { viewModel.deleteSong($0, in: modelContext) },
                 )
             }
         }

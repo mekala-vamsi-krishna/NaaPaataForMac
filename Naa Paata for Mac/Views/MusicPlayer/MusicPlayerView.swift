@@ -7,16 +7,24 @@
 
 import SwiftUI
 import AppKit
+import SwiftData
 
 struct MusicPlayerView: View {
+    @Environment(\.modelContext) private var modelContext
 
     @ObservedObject var viewModel: MusicLibraryViewModel
     
-    @State private var isFavourite = false
+    @Query private var favourites: [FavouriteSong]
+
     @State private var isShowingAddToPlaylist = false
 
     private var song: Song? {
         viewModel.currentSong
+    }
+    
+    private var isCurrentSongFavourite: Bool {
+        guard let song = viewModel.currentSong else { return false }
+        return favourites.contains { $0.songPath == song.url.path }
     }
 
     // MARK: - Constants
@@ -108,6 +116,11 @@ struct MusicPlayerView: View {
                 .fill(.ultraThinMaterial)
         }
         .clipped()
+    }
+    
+    private func toggleFavourite() {
+        guard let song = viewModel.currentSong else { return }
+        try? FavouritesService(context: modelContext).toggleFavourite(song.url)
     }
 
     // MARK: - Player Content
@@ -263,10 +276,10 @@ struct MusicPlayerView: View {
             }
 
             utilityButton(
-                systemName: isFavourite ? "heart.fill" : "heart",
-                isActive: isFavourite
+                systemName: isCurrentSongFavourite ? "heart.fill" : "heart",
+                isActive: isCurrentSongFavourite
             ) {
-                isFavourite.toggle()
+                toggleFavourite()
             }
         }
         .frame(
@@ -285,6 +298,8 @@ struct MusicPlayerView: View {
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(isActive ? .white : .white.opacity(0.72))
                 .frame(width: utilityButtonSize, height: utilityButtonSize)
+                .contentTransition(.symbolEffect(.replace))
+                .symbolEffect(.bounce, value: isActive)
         }
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

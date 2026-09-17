@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct SearchView: View {
+    @Environment(\.modelContext) private var modelContext
+
     @EnvironmentObject private var router: AppRouter
 
     @ObservedObject var viewModel: MusicLibraryViewModel
@@ -207,7 +209,7 @@ struct SearchView: View {
                     isCurrentSong: viewModel.currentSong?.id == song.id,
                     isPlaying: viewModel.isPlaying,
                     onSelect: { viewModel.play($0, in: filteredSongs) },
-                    onDelete: viewModel.deleteSong,
+                    onDelete: { viewModel.deleteSong($0, in: modelContext) },
                     onPlayNext: viewModel.enqueueNext,
                     onGoToAlbum: { song in
                         if let album = viewModel.album(for: song) {
