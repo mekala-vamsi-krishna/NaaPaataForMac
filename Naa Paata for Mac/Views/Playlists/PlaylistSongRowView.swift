@@ -1,14 +1,13 @@
 //
-//  AlbumTrackRowView.swift
+//  PlaylistSongRowView.swift
 //  NaaPaataForMac
 //
-//  Created by Mekala Vamsi Krishna on 9/11/26.
+//  Created by Mekala Vamsi Krishna on 9/16/26.
 //
 
 import SwiftUI
-import SwiftData
 
-struct AlbumTrackRowView: View {
+struct PlaylistSongRowView: View {
 
     let trackNumber: Int
     let song: Song
@@ -16,20 +15,19 @@ struct AlbumTrackRowView: View {
     var isPlaying: Bool = false
     var onSelect: (Song) -> Void = { _ in }
     var onPlayNext: (Song) -> Void = { _ in }
-    var onDelete: (Song) -> Void = { _ in }
-
-    @Environment(\.modelContext) private var modelContext
+    var onGoToAlbum: (Song) -> Void = { _ in }
+    var onRemoveFromPlaylist: (Song) -> Void = { _ in }
 
     @State private var isHovering = false
     @State private var isShowingInfo = false
-    @State private var isConfirmingDelete = false
-    @State private var addToPlaylistMode: AddToPlaylistMode?
 
     private let contentInset: CGFloat = 24
 
     var body: some View {
         HStack(spacing: 12) {
             leadingIndicator
+
+            ArtworkView(data: song.artworkData, size: 40, cornerRadius: 6)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(song.title)
@@ -67,35 +65,6 @@ struct AlbumTrackRowView: View {
         .sheet(isPresented: $isShowingInfo) {
             SongInfoView(song: song)
         }
-        .sheet(item: $addToPlaylistMode) { mode in
-            switch mode {
-            case .new:
-                CreatePlaylistSheet(initialSongURLs: [song.url]) { name, description, artworkData, songURLs in
-                    _ = try? PlaylistService(context: modelContext).createPlaylist(
-                        name: name,
-                        description: description,
-                        artworkData: artworkData,
-                        songURLs: songURLs
-                    )
-                }
-            case .existing:
-                AddToPlaylistSheet(song: song)
-            }
-        }
-        .confirmationDialog(
-            "Delete “\(song.title)”?",
-            isPresented: $isConfirmingDelete,
-            titleVisibility: .visible
-        ) {
-            Button("Delete", role: .destructive) {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    onDelete(song)
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("The file will be moved to Trash. You can restore it from Finder.")
-        }
     }
 
     // MARK: - Hover background
@@ -113,7 +82,7 @@ struct AlbumTrackRowView: View {
 
             EqualizerBars(
                 isPlaying: isPlaying && isCurrentSong,
-                size: 16,
+                size: 22,
                 barCount: 3,
                 color: AppColor.primary
             )
@@ -154,18 +123,11 @@ struct AlbumTrackRowView: View {
 
         Divider()
 
-        Menu {
-            Button("New Playlist") {
-                addToPlaylistMode = .new
-            }
-            Button("Existing Playlist") {
-                addToPlaylistMode = .existing
-            }
+        Button {
+            onGoToAlbum(song)
         } label: {
-            Label("Add to Playlist", systemImage: "text.badge.plus")
+            Label("Go to Album", systemImage: "square.stack")
         }
-
-        Divider()
 
         Button {
             NSWorkspace.shared.activateFileViewerSelecting([song.url])
@@ -182,10 +144,9 @@ struct AlbumTrackRowView: View {
         Divider()
 
         Button(role: .destructive) {
-            isConfirmingDelete = true
+            onRemoveFromPlaylist(song)
         } label: {
-            Label("Delete Song", systemImage: "trash")
-                .foregroundStyle(AppColor.danger)
+            Label("Remove from Playlist", systemImage: "minus.circle")
         }
     }
 }

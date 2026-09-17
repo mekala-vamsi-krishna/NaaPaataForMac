@@ -110,26 +110,35 @@ struct HomeView: View {
     @ViewBuilder
     private var content: some View {
         NavigationStack(path: $router.path) {
-            switch selection ?? .songs {
-            case .search:
-                SearchView(viewModel: viewModel)
+            Group {
+                switch selection ?? .songs {
+                case .search:
+                    SearchView(viewModel: viewModel)
 
-            case .songs:
-                SongsView(viewModel: viewModel)
+                case .songs:
+                    SongsView(viewModel: viewModel)
 
-            case .albums:
-                AlbumsView(viewModel: viewModel)
+                case .albums:
+                    AlbumsView(viewModel: viewModel)
 
-            case .playlists:
-                PlaylistsView()
+                case .playlists:
+                    PlaylistsView()
 
-            case .settings:
-                SettingsView(viewModel: viewModel)
+                case .settings:
+                    SettingsView(viewModel: viewModel)
+                }
+            }
+            .navigationDestination(for: Album.self) { album in
+                AlbumDetailView(album: album, viewModel: viewModel)
+            }
+            .navigationDestination(for: Playlist.self) { playlist in
+                PlaylistDetailView(
+                    playlist: playlist,
+                    viewModel: viewModel,
+                    router: router
+                )
             }
         }
         .environmentObject(router)
-        .navigationDestination(for: Album.self) { album in
-            AlbumDetailView(album: album, viewModel: viewModel)
-        }
     }
 }

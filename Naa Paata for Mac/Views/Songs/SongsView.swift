@@ -8,10 +8,11 @@
 import SwiftUI
 
 struct SongsView: View {
+
     @EnvironmentObject private var router: AppRouter
-    
+
     @ObservedObject var viewModel: MusicLibraryViewModel
-    
+
     @State private var sortOption: SongSortOption = .titleAscending
     @AppStorage("songs.sortOption") private var storedSortRawValue = SongSortOption.titleAscending.rawValue
 
@@ -49,22 +50,26 @@ struct SongsView: View {
     // MARK: - List
 
     private var songList: some View {
-        List(displayedSongs) { song in
-            SongRowView(
-                song: song,
-                isCurrentSong: viewModel.currentSong?.id == song.id,
-                isPlaying: viewModel.isPlaying,
-                onSelect: { viewModel.play($0, in: displayedSongs) },
-                onDelete: viewModel.deleteSong,
-                onPlayNext: viewModel.enqueueNext,
-                onGoToAlbum: { song in
-                    if let album = viewModel.album(for: song) {
-                        router.push(album)
-                    }
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(displayedSongs) { song in
+                    SongRowView(
+                        song: song,
+                        isCurrentSong: viewModel.currentSong?.id == song.id,
+                        isPlaying: viewModel.isPlaying,
+                        onSelect: { viewModel.play($0, in: displayedSongs) },
+                        onDelete: viewModel.deleteSong,
+                        onPlayNext: viewModel.enqueueNext,
+                        onGoToAlbum: { song in
+                            if let album = viewModel.album(for: song) {
+                                router.push(album)
+                            }
+                        }
+                    )
                 }
-            )
+            }
+            .padding(.vertical, 6)
         }
-        .listStyle(.inset)
         .safeAreaInset(edge: .top, spacing: 0) { headerBar }
     }
 

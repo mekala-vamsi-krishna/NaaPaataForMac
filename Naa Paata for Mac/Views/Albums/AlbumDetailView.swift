@@ -14,11 +14,12 @@ struct AlbumDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 0) {
                 header
+                    .padding(24)
+
                 trackList
             }
-            .padding(24)
         }
         .navigationTitle(album.title)
     }
@@ -80,6 +81,9 @@ struct AlbumDetailView: View {
     private var trackList: some View {
         VStack(spacing: 0) {
             Divider()
+                .padding(.horizontal, 24)
+                .padding(.bottom, 6)
+
             ForEach(Array(album.songs.enumerated()), id: \.element.id) { index, song in
                 AlbumTrackRowView(
                     trackNumber: index + 1,
@@ -87,11 +91,9 @@ struct AlbumDetailView: View {
                     isCurrentSong: viewModel.currentSong?.id == song.id,
                     isPlaying: viewModel.isPlaying,
                     onSelect: { viewModel.play($0, in: album.songs) },
-                    onPlayNext: viewModel.enqueueNext
+                    onPlayNext: viewModel.enqueueNext,
+                    onDelete: viewModel.deleteSong
                 )
-                if index < album.songs.count - 1 {
-                    Divider().padding(.leading, 60)
-                }
             }
         }
     }
