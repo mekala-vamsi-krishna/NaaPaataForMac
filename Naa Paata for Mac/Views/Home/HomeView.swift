@@ -30,20 +30,14 @@ struct HomeView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    Task { await viewModel.refresh() }
-                } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
-                }
-                .disabled(viewModel.isLoading)
-            }
-
-            ToolbarItem(placement: .primaryAction) {
-                Button {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         showPlayer.toggle()
                     }
                 } label: {
-                    Label("Toggle Player", systemImage: "sidebar.right")
+                    Label(
+                        showPlayer ? "Hide Player" : "Show Player",
+                        systemImage: "sidebar.right"
+                    )
                 }
                 .help(showPlayer ? "Hide Player" : "Show Player")
             }
@@ -130,9 +124,6 @@ struct HomeView: View {
                 case .settings:
                     SettingsView(viewModel: viewModel)
                 }
-            }
-            .navigationDestination(for: Album.self) { album in
-                AlbumDetailView(album: album, viewModel: viewModel)
             }
             .navigationDestination(for: Playlist.self) { playlist in
                 PlaylistDetailView(

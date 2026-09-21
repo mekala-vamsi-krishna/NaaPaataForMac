@@ -87,8 +87,7 @@ struct AlbumsView: View {
         Menu {
             Picker("Sort By", selection: $sortOption) {
                 ForEach(AlbumSortOption.allCases) { option in
-                    Label(option.title, systemImage: option.systemImage)
-                        .tag(option)
+                    Text(option.title).tag(option)
                 }
             }
             .pickerStyle(.inline)

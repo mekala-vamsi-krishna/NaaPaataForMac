@@ -93,7 +93,6 @@ struct SongsView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .help("Play all songs")
 
             Button {
                 viewModel.shuffleAll(displayedSongs)
@@ -102,7 +101,15 @@ struct SongsView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.large)
-            .help("Shuffle all songs")
+
+            Button {
+                Task { await viewModel.refresh() }
+            } label: {
+                Label("Refresh", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .disabled(viewModel.isLoading)
 
             Spacer()
 
@@ -124,8 +131,7 @@ struct SongsView: View {
         Menu {
             Picker("Sort By", selection: $sortOption) {
                 ForEach(SongSortOption.allCases) { option in
-                    Label(option.title, systemImage: option.systemImage)
-                        .tag(option)
+                    Text(option.title).tag(option)
                 }
             }
             .pickerStyle(.inline)

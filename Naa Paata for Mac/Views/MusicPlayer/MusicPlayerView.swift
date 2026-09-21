@@ -13,6 +13,7 @@ struct MusicPlayerView: View {
     @Environment(\.modelContext) private var modelContext
 
     @ObservedObject var viewModel: MusicLibraryViewModel
+    var onClose: () -> Void = {}
     
     @Query private var favourites: [FavouriteSong]
 

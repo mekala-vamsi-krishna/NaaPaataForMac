@@ -32,19 +32,22 @@ struct PlaylistsView: View {
     var body: some View {
         Group {
             if playlists.isEmpty {
-                EmptyStateView(
-                    title: "No Playlists Yet",
-                    systemImage: "music.note.list",
-                    message: "Create your first playlist to organise your music.",
-                    actionTitle: "Create Playlist",
-                    action: { isCreating = true }
-                )
+                VStack(spacing: 0) {
+                    headerBar
+
+                    EmptyStateView(
+                        title: "No Playlists Yet",
+                        systemImage: "music.note.list",
+                        message: "Create your first playlist to organise your music.",
+                        actionTitle: "Create Playlist",
+                        action: { isCreating = true }
+                    )
+                }
             } else {
                 content
             }
         }
         .navigationTitle("Playlists")
-        .toolbar { toolbarContent }
         .sheet(isPresented: $isCreating) {
             CreatePlaylistSheet { name, description, artworkData, songURLs in
                 _ = try? PlaylistService(context: modelContext).createPlaylist(
@@ -68,68 +71,97 @@ struct PlaylistsView: View {
     }
 
     private var gridContent: some View {
-        ScrollView {
-            LazyVGrid(
-                columns: gridColumns,
-                alignment: .leading,
-                spacing: 24
-            ) {
-                ForEach(playlists) { playlist in
-                    NavigationLink(value: playlist) {
-                        PlaylistCardView(playlist: playlist)
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu {
-                        Button("Delete", role: .destructive) {
-                            try? PlaylistService(context: modelContext).delete(playlist)
+        VStack(spacing: 0) {
+            headerBar
+
+            ScrollView {
+                LazyVGrid(
+                    columns: gridColumns,
+                    alignment: .leading,
+                    spacing: 24
+                ) {
+                    ForEach(playlists) { playlist in
+                        NavigationLink(value: playlist) {
+                            PlaylistCardView(playlist: playlist)
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button("Delete", role: .destructive) {
+                                try? PlaylistService(context: modelContext).delete(playlist)
+                            }
                         }
                     }
                 }
+                .padding(22)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(22)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
     private var listContent: some View {
-        List(playlists) { playlist in
-            NavigationLink(value: playlist) {
-                PlaylistRowView(playlist: playlist)
-            }
-            .buttonStyle(.plain)
-            .contextMenu {
-                Button("Delete", role: .destructive) {
-                    try? PlaylistService(context: modelContext).delete(playlist)
+        VStack(spacing: 0) {
+            headerBar
+
+            List(playlists) { playlist in
+                NavigationLink(value: playlist) {
+                    PlaylistRowView(playlist: playlist)
+                }
+                .buttonStyle(.plain)
+                .contextMenu {
+                    Button("Delete", role: .destructive) {
+                        try? PlaylistService(context: modelContext).delete(playlist)
+                    }
                 }
             }
+            .listStyle(.inset)
         }
-        .listStyle(.inset)
     }
 
-    // MARK: - Toolbar
+    // MARK: - Header bar
 
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
+    private var headerBar: some View {
+        HStack(spacing: 10) {
+            Spacer()
 
-        ToolbarItem(placement: .primaryAction) {
-            Picker("View Mode", selection: $viewMode) {
-                ForEach(PlaylistViewMode.allCases, id: \.self) { mode in
-                    Image(systemName: mode.systemImage)
-                        .tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .help("Toggle grid/list")
+            viewModePicker
+
+            newPlaylistButton
         }
-
-        ToolbarItem(placement: .primaryAction) {
-            Button {
-                isCreating = true
-            } label: {
-                Label("New Playlist", systemImage: "plus")
-            }
-            .help("Create a new playlist")
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(AppColor.surface)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(AppColor.separator)
+                .frame(height: 1)
         }
+    }
+
+    // MARK: - View mode picker
+
+    private var viewModePicker: some View {
+        Picker("View Mode", selection: $viewMode) {
+            ForEach(PlaylistViewMode.allCases, id: \.self) { mode in
+                Image(systemName: mode.systemImage)
+                    .tag(mode)
+            }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .frame(width: 96)
+        .help("Toggle grid/list")
+    }
+
+    // MARK: - New playlist button
+
+    private var newPlaylistButton: some View {
+        Button {
+            isCreating = true
+        } label: {
+            Label("New Playlist", systemImage: "plus")
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .help("Create a new playlist")
     }
 }
