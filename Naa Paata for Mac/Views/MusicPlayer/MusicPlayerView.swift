@@ -13,16 +13,17 @@ struct MusicPlayerView: View {
     @Environment(\.modelContext) private var modelContext
 
     @ObservedObject var viewModel: MusicLibraryViewModel
-    var onClose: () -> Void = {}
-    
+
     @Query private var favourites: [FavouriteSong]
 
     @State private var isShowingAddToPlaylist = false
 
+    var onClose: () -> Void = {}
+    
     private var song: Song? {
         viewModel.currentSong
     }
-    
+
     private var isCurrentSongFavourite: Bool {
         guard let song = viewModel.currentSong else { return false }
         return favourites.contains { $0.songPath == song.url.path }
@@ -37,27 +38,6 @@ struct MusicPlayerView: View {
     private let controlButtonSize: CGFloat = 42
     private let playButtonSize: CGFloat = 54
     private let utilityButtonSize: CGFloat = 42
-
-    // MARK: - Repeat Mode
-
-    private enum RepeatMode {
-        case off, all, one
-
-        var systemImage: String {
-            switch self {
-            case .off, .all: return "repeat"
-            case .one:       return "repeat.1"
-            }
-        }
-
-        var next: RepeatMode {
-            switch self {
-            case .off: return .all
-            case .all: return .one
-            case .one: return .off
-            }
-        }
-    }
 
     // MARK: - Body
 
@@ -81,15 +61,9 @@ struct MusicPlayerView: View {
             .allowsHitTesting(false)
             .ignoresSafeArea()
 
-            Group {
-                if let song {
-                    playerContent(song: song)
-                } else {
-                    emptyState
-                }
-            }
-            .frame(width: playerWidth)
-            .frame(maxHeight: .infinity)
+            playerContent
+                .frame(width: playerWidth)
+                .frame(maxHeight: .infinity)
         }
         .sheet(isPresented: $isShowingAddToPlaylist) {
             if let song = viewModel.currentSong {
@@ -118,7 +92,7 @@ struct MusicPlayerView: View {
         }
         .clipped()
     }
-    
+
     private func toggleFavourite() {
         guard let song = viewModel.currentSong else { return }
         try? FavouritesService(context: modelContext).toggleFavourite(song.url)
@@ -126,27 +100,15 @@ struct MusicPlayerView: View {
 
     // MARK: - Player Content
 
-    private func playerContent(song: Song) -> some View {
+    private var playerContent: some View {
         VStack(spacing: 0) {
-            ArtworkView(
-                data: song.artworkData,
-                size: artworkSize,
-                cornerRadius: artworkCornerRadius
-            )
-            .frame(width: artworkSize, height: artworkSize)
-            .clipShape(
-                RoundedRectangle(
-                    cornerRadius: artworkCornerRadius,
-                    style: .continuous
-                )
-            )
-            .shadow(color: .black.opacity(0.35), radius: 18, y: 10)
-            .padding(.bottom, 22)
+            artwork
+                .padding(.bottom, 22)
 
-            trackInfo(song: song)
+            trackInfo
                 .padding(.bottom, 20)
 
-            progressSection(song: song)
+            progressSection
                 .padding(.bottom, 20)
 
             backwardForwardPlayControls
@@ -159,35 +121,85 @@ struct MusicPlayerView: View {
         .padding(.bottom, 24)
     }
 
+    // MARK: - Artwork
+
+    private var artwork: some View {
+        ZStack {
+            if let data = song?.artworkData,
+               let image = NSImage(data: data) {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                ZStack {
+                    AppColor.brandGradient
+                        .grayscale(1)
+                        .opacity(0.35)
+
+                    Image(systemName: "music.note")
+                        .font(.system(size: 72, weight: .light))
+                        .foregroundStyle(.white.opacity(0.35))
+                }
+            }
+        }
+        .frame(width: artworkSize, height: artworkSize)
+        .clipShape(
+            RoundedRectangle(
+                cornerRadius: artworkCornerRadius,
+                style: .continuous
+            )
+        )
+        .shadow(
+            color: .black.opacity(song == nil ? 0.15 : 0.35),
+            radius: 18,
+            y: 10
+        )
+    }
+
     // MARK: - Track Information
 
-    private func trackInfo(song: Song) -> some View {
+    private var trackInfo: some View {
         VStack(spacing: 5) {
-            MarqueeText(
-                text: song.title,
-                font: .system(size: 16, weight: .semibold),
-                color: .white
-            )
-            .frame(width: playerWidth - horizontalPadding * 2, height: 22)
+            if let song {
+                MarqueeText(
+                    text: song.title,
+                    font: .system(size: 16, weight: .semibold),
+                    color: .white
+                )
+                .frame(width: playerWidth - horizontalPadding * 2, height: 22)
 
-            MarqueeText(
-                text: song.artist,
-                font: .system(size: 13),
-                color: .white.opacity(0.75)
-            )
-            .frame(width: playerWidth - horizontalPadding * 2, height: 18)
+                MarqueeText(
+                    text: song.artist,
+                    font: .system(size: 13),
+                    color: .white.opacity(0.75)
+                )
+                .frame(width: playerWidth - horizontalPadding * 2, height: 18)
+            } else {
+                Text("Not Playing")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.35))
+                    .frame(width: playerWidth - horizontalPadding * 2, height: 22)
+
+                Text("Select a song to begin")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.25))
+                    .frame(width: playerWidth - horizontalPadding * 2, height: 18)
+            }
         }
     }
 
     // MARK: - Progress
 
-    private func progressSection(song: Song) -> some View {
+    private var progressSection: some View {
         VStack(spacing: 6) {
             ThickSlider(
-                value: viewModel.progress,
+                value: song != nil ? viewModel.progress : 0,
                 trackHeight: 4,
                 thumbSize: 12,
-                onSeek: { viewModel.seek(toProgress: $0) }
+                onSeek: { progress in
+                    guard song != nil else { return }
+                    viewModel.seek(toProgress: progress)
+                }
             )
             .frame(
                 width: playerWidth - horizontalPadding * 2,
@@ -195,13 +207,13 @@ struct MusicPlayerView: View {
             )
 
             HStack {
-                Text(elapsedString)
+                Text(song != nil ? elapsedString : "0:00")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.white.opacity(0.78))
 
                 Spacer()
 
-                Text(song.formattedDuration)
+                Text(song?.formattedDuration ?? "0:00")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.white.opacity(0.78))
             }
@@ -238,7 +250,7 @@ struct MusicPlayerView: View {
         Button {
             viewModel.togglePlayPause()
         } label: {
-            Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
+            Image(systemName: viewModel.isPlaying && song != nil ? "pause.fill" : "play.fill")
                 .font(.system(size: 26, weight: .medium))
                 .foregroundStyle(.white)
                 .frame(width: playButtonSize, height: playButtonSize)
@@ -253,18 +265,22 @@ struct MusicPlayerView: View {
 
     // MARK: - Utility Controls
 
+    // MARK: - Utility Controls
+
     private var utilityControls: some View {
         HStack(spacing: 0) {
             utilityButton(
                 systemName: "shuffle",
-                isActive: viewModel.isShuffled
+                isActive: viewModel.isShuffled,
+                showsActiveBackground: true
             ) {
                 viewModel.toggleShuffle()
             }
 
             utilityButton(
                 systemName: viewModel.repeatMode.systemImage,
-                isActive: viewModel.repeatMode != .off
+                isActive: viewModel.repeatMode != .off,
+                showsActiveBackground: true
             ) {
                 viewModel.cycleRepeatMode()
             }
@@ -273,6 +289,7 @@ struct MusicPlayerView: View {
                 systemName: "text.badge.plus",
                 isActive: false
             ) {
+                guard song != nil else { return }
                 isShowingAddToPlaylist = true
             }
 
@@ -292,38 +309,30 @@ struct MusicPlayerView: View {
     private func utilityButton(
         systemName: String,
         isActive: Bool,
+        showsActiveBackground: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(isActive ? .white : .white.opacity(0.72))
-                .frame(width: utilityButtonSize, height: utilityButtonSize)
-                .contentTransition(.symbolEffect(.replace))
-                .symbolEffect(.bounce, value: isActive)
+            ZStack {
+                if isActive && showsActiveBackground {
+                    Circle()
+                        .fill(Color.white.opacity(0.18))
+                        .frame(width: 32, height: 32)
+                        .transition(.scale.combined(with: .opacity))
+                }
+
+                Image(systemName: systemName)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(isActive ? .white : .white.opacity(0.72))
+            }
+            .frame(width: utilityButtonSize, height: utilityButtonSize)
+            .contentShape(Rectangle())
+            .contentTransition(.symbolEffect(.replace))
+            .symbolEffect(.bounce, value: isActive)
+            .animation(.easeInOut(duration: 0.15), value: isActive)
         }
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    // MARK: - Empty State
-
-    private var emptyState: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "music.note")
-                .font(.system(size: 34, weight: .light))
-                .foregroundStyle(.white.opacity(0.7))
-
-            Text("Nothing Playing")
-                .font(.headline)
-                .foregroundStyle(.white)
-
-            Text("Select a song to begin.")
-                .font(.caption)
-                .foregroundStyle(.white.opacity(0.7))
-        }
-        .frame(width: playerWidth)
-        .frame(maxHeight: .infinity)
     }
 
     // MARK: - Helpers
