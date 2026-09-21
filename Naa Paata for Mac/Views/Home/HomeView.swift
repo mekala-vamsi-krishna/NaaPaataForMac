@@ -38,9 +38,7 @@ struct HomeView: View {
         }
 
         .task {
-            if viewModel.songs.isEmpty {
-                await viewModel.loadLibrary()
-            }
+            await viewModel.restoreLastSession()
         }
 
         .alert(

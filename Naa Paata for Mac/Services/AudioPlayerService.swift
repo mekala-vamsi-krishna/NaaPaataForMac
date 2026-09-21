@@ -18,6 +18,7 @@ protocol AudioPlayerServiceProtocol: AnyObject {
     func play()
     func pause()
     func seek(toProgress progress: Double)
+    func seek(toTime time: TimeInterval)
     func setLooping(_ looping: Bool)
 }
 
@@ -77,6 +78,14 @@ final class AudioPlayerService: NSObject, AudioPlayerServiceProtocol {
         player.currentTime = duration * clamped
         progressSubject.send(clamped)
         elapsedSubject.send(player.currentTime)
+    }
+    
+    func seek(toTime time: TimeInterval) {
+        guard let player else { return }
+        let clamped = min(max(time, 0), duration)
+        player.currentTime = clamped
+        elapsedSubject.send(clamped)
+        progressSubject.send(duration > 0 ? clamped / duration : 0)
     }
 
     func setLooping(_ looping: Bool) {

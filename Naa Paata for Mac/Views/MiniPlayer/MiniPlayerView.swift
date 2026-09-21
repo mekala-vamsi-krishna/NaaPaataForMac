@@ -72,6 +72,9 @@ struct MiniPlayerView: View {
                 if let song { AddToPlaylistSheet(song: song) }
             }
         }
+        .task {
+            await viewModel.restoreLastSession()
+        }
     }
 
     // MARK: - Artwork

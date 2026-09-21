@@ -10,7 +10,7 @@ import Combine
 import AppKit
 import SwiftData
 
-enum RepeatMode: CaseIterable {
+enum RepeatMode: String, CaseIterable, Codable {
     case off, all, one
 
     var systemImage: String {
@@ -46,19 +46,37 @@ final class MusicLibraryViewModel: ObservableObject {
 
     private let libraryService: MusicLibraryServiceProtocol
     private let playerService: AudioPlayerServiceProtocol
+    private let playbackStateService: PlaybackStateServiceProtocol
+
     private var cancellables = Set<AnyCancellable>()
+    
+    private var hasRestoredSession = false
+    private var lastPersistDate: Date = .distantPast
+    private let persistInterval: TimeInterval = 5
 
     var libraryFolderURL: URL { libraryService.libraryFolderURL }
 
     init(
         libraryService: MusicLibraryServiceProtocol,
-        playerService: AudioPlayerServiceProtocol
+        playerService: AudioPlayerServiceProtocol,
+        playbackStateService: PlaybackStateServiceProtocol
     ) {
         self.libraryService = libraryService
         self.playerService = playerService
+        self.playbackStateService = playbackStateService
         bindPlayer()
+        
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.persistState()
+            }
+        }
     }
-
+    
     // MARK: - Library
 
     func loadLibrary() async {
@@ -159,6 +177,7 @@ final class MusicLibraryViewModel: ObservableObject {
     func togglePlayPause() {
         guard currentSong != nil else { return }
         isPlaying ? playerService.pause() : playerService.play()
+        persistState()
     }
 
     func playNext() {
@@ -171,6 +190,7 @@ final class MusicLibraryViewModel: ObservableObject {
         }
 
         advanceToNext()
+        persistState()
     }
 
     func playPrevious() {
@@ -187,6 +207,7 @@ final class MusicLibraryViewModel: ObservableObject {
 
     func seek(toProgress progress: Double) {
         playerService.seek(toProgress: progress)
+        persistState()
     }
 
     /// Insert `song` immediately after the currently playing track.
@@ -226,6 +247,7 @@ final class MusicLibraryViewModel: ObservableObject {
             queue = originalQueue
             currentIndex = queue.firstIndex(where: { $0.id == current.id })
         }
+        persistState()
     }
 
     func cycleRepeatMode() {
@@ -235,6 +257,7 @@ final class MusicLibraryViewModel: ObservableObject {
         case .one: repeatMode = .off
         }
         applyRepeatMode()
+        persistState()
     }
 
     // MARK: - Private
@@ -306,6 +329,7 @@ final class MusicLibraryViewModel: ObservableObject {
         } catch {
             errorMessage = "Could not play \"\(song.title)\"."
         }
+        persistState()
     }
 
     private func bindPlayer() {
@@ -316,7 +340,18 @@ final class MusicLibraryViewModel: ObservableObject {
 
         playerService.progressPublisher
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] in self?.progress = $0 }
+            .sink { [weak self] newProgress in
+                guard let self else { return }
+                
+                self.progress = newProgress
+                
+                let now = Date()
+                guard now.timeIntervalSince(self.lastPersistDate) >= self.persistInterval,
+                      self.isPlaying
+                        else { return }
+                
+                self.persistState()
+            }
             .store(in: &cancellables)
 
         playerService.elapsedPublisher
@@ -328,6 +363,65 @@ final class MusicLibraryViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] in self?.handleTrackDidFinish() }
             .store(in: &cancellables)
+    }
+
+    func restoreLastSession() async {
+        guard !hasRestoredSession else { return }
+        hasRestoredSession = true
+
+        if songs.isEmpty {
+            await loadLibrary()
+        }
+
+        guard let state = playbackStateService.load(),
+              let currentPath = state.currentSongPath,
+              let song = songs.first(where: { $0.url.path == currentPath })
+        else {
+            return
+        }
+
+        let queue = state.queuePaths.compactMap { path in
+            songs.first { $0.url.path == path }
+        }
+        let originalQueue = state.originalQueuePaths.compactMap { path in
+            songs.first { $0.url.path == path }
+        }
+
+        self.queue = queue.isEmpty ? songs : queue
+        self.originalQueue = originalQueue.isEmpty ? self.queue : originalQueue
+        self.currentIndex = state.currentIndex
+        self.isShuffled = state.isShuffled
+        self.repeatMode = RepeatMode(rawValue: state.repeatMode) ?? .off
+        self.currentSong = song
+
+        do {
+            try playerService.load(url: song.url)
+            playerService.setLooping(repeatMode == .one)
+            playerService.seek(toTime: state.elapsed)
+        } catch {
+            errorMessage = "Could not restore last song."
+            return
+        }
+
+        self.elapsed = state.elapsed
+        self.progress = (song.duration ?? 0) > 0
+            ? state.elapsed / (song.duration ?? 1)
+            : 0
+    }
+    
+    private func persistState() {
+        let state = PlaybackState(
+            currentSongPath: currentSong?.url.path,
+            elapsed: elapsed,
+            queuePaths: queue.map(\.url.path),
+            originalQueuePaths: originalQueue.map(\.url.path),
+            currentIndex: currentIndex,
+            isShuffled: isShuffled,
+            repeatMode: repeatMode.rawValue,
+            savedAt: Date()
+        )
+        playbackStateService.save(state)
+        lastPersistDate = Date()
     }
 
     private func handleTrackDidFinish() {

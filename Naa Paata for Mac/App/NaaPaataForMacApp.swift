@@ -17,11 +17,13 @@ struct NaaPaataForMacApp: App {
         let folderService = MusicFolderService()
         let libraryService = MusicLibraryService(folderService: folderService)
         let playerService = AudioPlayerService()
+        let playbackStateService = PlaybackStateService()
 
         _libraryViewModel = StateObject(
             wrappedValue: MusicLibraryViewModel(
                 libraryService: libraryService,
-                playerService: playerService
+                playerService: playerService,
+                playbackStateService: playbackStateService
             )
         )
     }

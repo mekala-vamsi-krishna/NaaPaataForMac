@@ -292,8 +292,6 @@ struct MusicPlayerView: View {
 
     // MARK: - Utility Controls
 
-    // MARK: - Utility Controls
-
     private var utilityControls: some View {
         HStack(spacing: 0) {
             utilityButton(
