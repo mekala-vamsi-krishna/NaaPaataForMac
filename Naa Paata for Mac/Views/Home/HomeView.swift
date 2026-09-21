@@ -43,7 +43,6 @@ struct HomeView: View {
             }
         }
         .navigationSplitViewStyle(.balanced)
-        .frame(minWidth: 1100, minHeight: 650)
         .toolbarBackground(.hidden, for: .windowToolbar)
 
         .onChange(of: selection) { _, _ in

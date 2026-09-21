@@ -29,10 +29,12 @@ struct NaaPaataForMacApp: App {
     var body: some Scene {
         WindowGroup {
             HomeView(viewModel: libraryViewModel)
+                .musicKeyboardShortcuts(for: libraryViewModel)
                 .tint(AppColor.primary)
         }
         .modelContainer(for: [Playlist.self, FavouriteSong.self])
-        .defaultSize(width: 1100, height: 720)
+        .defaultPosition(.center)
+        .windowResizability(.contentSize)
         .windowToolbarStyle(.unified)
     }
 }
