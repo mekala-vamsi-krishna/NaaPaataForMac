@@ -31,10 +31,18 @@ struct NaaPaataForMacApp: App {
             HomeView(viewModel: libraryViewModel)
                 .musicKeyboardShortcuts(for: libraryViewModel)
                 .tint(AppColor.primary)
+                .background(WindowConfigurator())
         }
         .modelContainer(for: [Playlist.self, FavouriteSong.self])
-        .defaultPosition(.center)
         .windowResizability(.contentSize)
         .windowToolbarStyle(.unified)
+
+        Window("Mini Player", id: WindowID.miniPlayer) {
+            MiniPlayerView(viewModel: libraryViewModel)
+        }
+        .modelContainer(for: [Playlist.self, FavouriteSong.self])
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 380, height: 380)
+        .defaultPosition(.topTrailing)
     }
 }

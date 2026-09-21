@@ -24,23 +24,11 @@ struct HomeView: View {
             content
         }
         .inspector(isPresented: $showPlayer) {
-            MusicPlayerView(viewModel: viewModel)
-                .inspectorColumnWidth(min: 320, ideal: 320, max: 320)
-        }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        showPlayer.toggle()
-                    }
-                } label: {
-                    Label(
-                        showPlayer ? "Hide Player" : "Show Player",
-                        systemImage: "sidebar.right"
-                    )
-                }
-                .help(showPlayer ? "Hide Player" : "Show Player")
-            }
+            MusicPlayerView(
+                viewModel: viewModel,
+                showPlayer: $showPlayer
+            )
+            .inspectorColumnWidth(min: 320, ideal: 320, max: 320)
         }
         .navigationSplitViewStyle(.balanced)
         .toolbarBackground(.hidden, for: .windowToolbar)
@@ -110,10 +98,10 @@ struct HomeView: View {
 
                 case .songs:
                     SongsView(viewModel: viewModel)
-                    
+
                 case .favourites:
                     FavouritesView(viewModel: viewModel)
-                    
+
                 case .albums:
                     AlbumsView(viewModel: viewModel)
 

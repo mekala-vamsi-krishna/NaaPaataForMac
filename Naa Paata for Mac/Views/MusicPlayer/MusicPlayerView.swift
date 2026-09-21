@@ -11,9 +11,11 @@ import SwiftData
 
 struct MusicPlayerView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openWindow) private var openWindow
 
     @ObservedObject var viewModel: MusicLibraryViewModel
-
+    @Binding var showPlayer: Bool
+    
     @Query private var favourites: [FavouriteSong]
 
     @State private var isShowingAddToPlaylist = false
@@ -68,6 +70,31 @@ struct MusicPlayerView: View {
         .sheet(isPresented: $isShowingAddToPlaylist) {
             if let song = viewModel.currentSong {
                 AddToPlaylistSheet(song: song)
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    WindowCoordinator.shared.hideMainWindow()
+                    openWindow(id: WindowID.miniPlayer)
+                } label: {
+                    Label("Mini Player", systemImage: "pip.enter")
+                }
+                .help("Open Mini Player")
+            }
+
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showPlayer.toggle()
+                    }
+                } label: {
+                    Label(
+                        showPlayer ? "Hide Player" : "Show Player",
+                        systemImage: "sidebar.right"
+                    )
+                }
+                .help(showPlayer ? "Hide Player" : "Show Player")
             }
         }
     }
