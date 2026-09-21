@@ -104,17 +104,16 @@ struct HomeView: View {
                     AlbumsView(viewModel: viewModel)
 
                 case .playlists:
-                    PlaylistsView()
+                    PlaylistsView(viewModel: viewModel)
 
                 case .settings:
                     SettingsView(viewModel: viewModel)
                 }
             }
-            .navigationDestination(for: Playlist.self) { playlist in
-                PlaylistDetailView(
-                    playlist: playlist,
-                    viewModel: viewModel,
-                    router: router
+            .navigationDestination(for: SmartPlaylistRoute.self) { route in
+                SmartPlaylistDetailView(
+                    kind: route.kind,
+                    viewModel: viewModel
                 )
             }
         }

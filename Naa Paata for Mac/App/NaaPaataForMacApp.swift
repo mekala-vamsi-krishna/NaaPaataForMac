@@ -13,7 +13,30 @@ struct NaaPaataForMacApp: App {
 
     @StateObject private var libraryViewModel: MusicLibraryViewModel
 
+    private let container: ModelContainer
+
     init() {
+        UserDefaults.standard.register(defaults: [
+            "NSWindowAssertWhenDisplayCycleLimitReached": false
+        ])
+
+        // Shared SwiftData container.
+        let schema = Schema([
+            Playlist.self,
+            FavouriteSong.self,
+            PlayHistoryEntry.self
+        ])
+        let configuration = ModelConfiguration(schema: schema)
+        let container = try! ModelContainer(
+            for: schema,
+            configurations: [configuration]
+        )
+        self.container = container
+
+        Task { @MainActor in
+            PlayHistoryStore.shared.configure(with: container)
+        }
+
         let folderService = MusicFolderService()
         let libraryService = MusicLibraryService(folderService: folderService)
         let playerService = AudioPlayerService()
@@ -35,15 +58,16 @@ struct NaaPaataForMacApp: App {
                 .tint(AppColor.primary)
                 .background(WindowConfigurator())
         }
-        .modelContainer(for: [Playlist.self, FavouriteSong.self])
+        .modelContainer(container)
         .windowResizability(.contentSize)
         .windowToolbarStyle(.unified)
 
         Window("Mini Player", id: WindowID.miniPlayer) {
             MiniPlayerView(viewModel: libraryViewModel)
         }
-        .modelContainer(for: [Playlist.self, FavouriteSong.self])
+        .modelContainer(container)
         .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
         .defaultSize(width: 380, height: 380)
         .defaultPosition(.topTrailing)
     }

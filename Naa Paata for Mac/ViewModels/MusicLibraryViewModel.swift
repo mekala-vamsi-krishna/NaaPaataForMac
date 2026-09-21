@@ -329,6 +329,9 @@ final class MusicLibraryViewModel: ObservableObject {
         } catch {
             errorMessage = "Could not play \"\(song.title)\"."
         }
+        
+        PlayHistoryStore.shared.recordPlay(song.url)
+
         persistState()
     }
 
