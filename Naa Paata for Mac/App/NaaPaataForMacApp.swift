@@ -12,6 +12,7 @@ import SwiftData
 struct NaaPaataForMacApp: App {
 
     @StateObject private var libraryViewModel: MusicLibraryViewModel
+    @StateObject private var appearanceService = AppearanceService()
 
     private let container: ModelContainer
 
@@ -70,5 +71,10 @@ struct NaaPaataForMacApp: App {
         .windowResizability(.contentSize)
         .defaultSize(width: 380, height: 380)
         .defaultPosition(.topTrailing)
+
+        Settings {
+            AppSettingsView(viewModel: libraryViewModel)
+                .environmentObject(appearanceService)
+        }
     }
 }

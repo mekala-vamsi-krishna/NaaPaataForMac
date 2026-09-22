@@ -10,10 +10,9 @@ import Foundation
 enum SidebarItem: String, CaseIterable, Identifiable {
     case search
     case songs
+    case favourites
     case albums
     case playlists
-    case favourites
-    case settings
 
     var id: String { rawValue }
 
@@ -21,10 +20,9 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         switch self {
         case .search:     return "Search"
         case .songs:      return "Songs"
+        case .favourites: return "Favourites"
         case .albums:     return "Albums"
         case .playlists:  return "Playlists"
-        case .favourites: return "Favourites"
-        case .settings:   return "Settings"
         }
     }
 
@@ -35,7 +33,6 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .albums:     return "square.stack"
         case .playlists:  return "music.note.list"
         case .favourites: return "heart"
-        case .settings:   return "gearshape"
         }
     }
 }
