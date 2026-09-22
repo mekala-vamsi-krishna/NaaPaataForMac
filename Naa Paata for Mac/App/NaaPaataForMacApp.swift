@@ -58,6 +58,12 @@ struct NaaPaataForMacApp: App {
                 .musicKeyboardShortcuts(for: libraryViewModel)
                 .tint(AppColor.primary)
                 .background(WindowConfigurator())
+                .task {
+                    // Re-open the notch panel if the user had it enabled.
+                    if UserDefaults.standard.bool(forKey: "showNotchMedia") {
+                        NotchWindowController.shared.show(viewModel: libraryViewModel)
+                    }
+                }
         }
         .modelContainer(container)
         .windowResizability(.contentSize)

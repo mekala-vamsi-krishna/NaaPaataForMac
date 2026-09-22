@@ -16,12 +16,41 @@ struct AppSettingsView: View {
     var body: some View {
         Form {
             AppearanceSection(service: appearanceService)
+            NotchMediaSection(viewModel: viewModel)
             LibrarySection(viewModel: viewModel)
             AboutSection()
         }
         .formStyle(.grouped)
         .frame(width: 520)
         .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+// MARK: - Notch Media
+
+private struct NotchMediaSection: View {
+
+    @ObservedObject var viewModel: MusicLibraryViewModel
+
+    @AppStorage("showNotchMedia") private var showNotchMedia = false
+
+    var body: some View {
+        Section {
+            Toggle("Show Media in Notch", isOn: $showNotchMedia)
+                .onChange(of: showNotchMedia) { _, newValue in
+                    if newValue {
+                        NotchWindowController.shared.show(viewModel: viewModel)
+                    } else {
+                        NotchWindowController.shared.hide()
+                    }
+                }
+        } header: {
+            Text("Notch Media")
+        } footer: {
+            Text("Displays playback controls at the top center of your screen. Macs without a physical notch get a simulated one.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 
