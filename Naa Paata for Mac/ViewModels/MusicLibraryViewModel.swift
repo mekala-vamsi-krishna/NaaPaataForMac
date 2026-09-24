@@ -37,7 +37,10 @@ final class MusicLibraryViewModel: ObservableObject {
     @Published private(set) var elapsed: TimeInterval = 0
     @Published private(set) var isShuffled = false
     @Published private(set) var repeatMode: RepeatMode = .off
-
+    
+    @Published private(set) var focusedSong: Song?
+    @Published var pendingIntent: SongIntent?
+    
     /// Current playback order. May be shuffled or in source order.
     private var queue: [Song] = []
     /// The unshuffled source list, kept so shuffle can be toggled off.
@@ -55,6 +58,10 @@ final class MusicLibraryViewModel: ObservableObject {
     private let persistInterval: TimeInterval = 5
 
     var libraryFolderURL: URL { libraryService.libraryFolderURL }
+    
+    var targetSong: Song? {
+        focusedSong ?? currentSong
+    }
 
     init(
         libraryService: MusicLibraryServiceProtocol,
@@ -259,6 +266,13 @@ final class MusicLibraryViewModel: ObservableObject {
         applyRepeatMode()
         persistState()
     }
+    
+    func setRepeatMode(_ mode: RepeatMode) {
+        guard repeatMode != mode else { return }
+        repeatMode = mode
+        applyRepeatMode()
+        persistState()
+    }
 
     // MARK: - Private
 
@@ -319,9 +333,14 @@ final class MusicLibraryViewModel: ObservableObject {
     private func applyRepeatMode() {
         playerService.setLooping(repeatMode == .one)
     }
+    
+    func clearPendingIntent() {
+        pendingIntent = nil
+    }
 
     private func startPlayback(of song: Song) {
         currentSong = song
+        focusedSong = song
         do {
             try playerService.load(url: song.url)
             applyRepeatMode()
@@ -333,6 +352,10 @@ final class MusicLibraryViewModel: ObservableObject {
         PlayHistoryStore.shared.recordPlay(song.url)
 
         persistState()
+    }
+    
+    func focus(_ song: Song) {
+        focusedSong = song
     }
 
     private func bindPlayer() {

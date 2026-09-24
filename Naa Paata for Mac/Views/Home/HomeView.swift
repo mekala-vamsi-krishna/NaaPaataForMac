@@ -4,10 +4,25 @@
 //
 //  Created by Mekala Vamsi Krishna on 9/11/26.
 //
+//
+//  FolderSetupView.swift
+//  NaaPaataForMac
+//
+//  Created by Mekala Vamsi Krishna on 9/11/26.
+//
 
 import SwiftUI
+import SwiftData
 
 struct HomeView: View {
+
+    // Song Menu Properties
+    @Environment(\.modelContext) private var modelContext
+
+    @State private var infoSong: Song?
+    @State private var addToPlaylistSong: Song?
+    @State private var addToPlaylistMode: AddToPlaylistMode?
+    @State private var confirmDeleteSong: Song?
 
     @ObservedObject var viewModel: MusicLibraryViewModel
 
@@ -37,6 +52,59 @@ struct HomeView: View {
             router.popToRoot()
         }
 
+        // Handle intents from the menu bar
+        .onChange(of: viewModel.pendingIntent) { _, intent in
+            guard let intent else { return }
+            Task { @MainActor in
+                handleIntent(intent)
+                viewModel.clearPendingIntent()
+            }
+        }
+
+        // Info sheet
+        .sheet(item: $infoSong) { song in
+            SongInfoView(song: song)
+        }
+
+        // Add to Playlist sheet
+        .sheet(item: $addToPlaylistSong) { song in
+            switch addToPlaylistMode {
+            case .new:
+                CreatePlaylistSheet(initialSongURLs: [song.url]) { name, description, artworkData, songURLs in
+                    _ = try? PlaylistService(context: modelContext).createPlaylist(
+                        name: name,
+                        description: description,
+                        artworkData: artworkData,
+                        songURLs: songURLs
+                    )
+                }
+            case .existing, .none:
+                AddToPlaylistSheet(song: song)
+            }
+        }
+
+        // Delete confirmation
+        .confirmationDialog(
+            "Delete “\(confirmDeleteSong?.title ?? "")”?",
+            isPresented: Binding(
+                get: { confirmDeleteSong != nil },
+                set: { if !$0 { confirmDeleteSong = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                if let song = confirmDeleteSong {
+                    viewModel.deleteSong(song, in: modelContext)
+                }
+                confirmDeleteSong = nil
+            }
+            Button("Cancel", role: .cancel) {
+                confirmDeleteSong = nil
+            }
+        } message: {
+            Text("The file will be moved to Trash. You can restore it from Finder.")
+        }
+
         .task {
             await viewModel.restoreLastSession()
         }
@@ -50,6 +118,31 @@ struct HomeView: View {
             actions: { Button("OK", role: .cancel) {} },
             message: { Text(viewModel.errorMessage ?? "") }
         )
+    }
+
+    // MARK: - Intent handling
+
+    private func handleIntent(_ intent: SongIntent) {
+        switch intent {
+        case .showInfo(let song):
+            infoSong = song
+
+        case .addToNewPlaylist(let song):
+            addToPlaylistSong = song
+            addToPlaylistMode = .new
+
+        case .addToExistingPlaylist(let song):
+            addToPlaylistSong = song
+            addToPlaylistMode = .existing
+
+        case .goToAlbum(let song):
+            if let album = viewModel.album(for: song) {
+                router.push(album)
+            }
+
+        case .delete(let song):
+            confirmDeleteSong = song
+        }
     }
 
     // MARK: - Sidebar
@@ -106,6 +199,16 @@ struct HomeView: View {
                 case .playlists:
                     PlaylistsView(viewModel: viewModel)
                 }
+            }
+            .navigationDestination(for: Album.self) { album in
+                AlbumDetailView(album: album, viewModel: viewModel)
+            }
+            .navigationDestination(for: Playlist.self) { playlist in
+                PlaylistDetailView(
+                    playlist: playlist,
+                    viewModel: viewModel,
+                    router: router
+                )
             }
             .navigationDestination(for: SmartPlaylistRoute.self) { route in
                 SmartPlaylistDetailView(

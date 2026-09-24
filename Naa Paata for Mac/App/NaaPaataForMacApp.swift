@@ -68,7 +68,11 @@ struct NaaPaataForMacApp: App {
         .modelContainer(container)
         .windowResizability(.contentSize)
         .windowToolbarStyle(.unified)
-
+        .commands {
+            ControlsMenu(viewModel: libraryViewModel)
+            SongMenu(viewModel: libraryViewModel)
+        }
+        
         Window("Mini Player", id: WindowID.miniPlayer) {
             MiniPlayerView(viewModel: libraryViewModel)
         }
