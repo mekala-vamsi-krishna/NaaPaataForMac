@@ -371,13 +371,20 @@ struct MusicPlayerView: View {
 // MARK: - Nudge Button
 
 private struct NudgeButton: View {
-
+    @State private var isAnimating = false
+    
     let systemName: String
-    let direction: CGFloat          // -1 = left, +1 = right
+    let direction: CGFloat
     let size: CGFloat
     let action: () -> Void
 
+    // Slide distance and timing
+    private let slideDistance: CGFloat = 16
+    private let exitDuration: Double = 0.16
+    private let entryDuration: Double = 0.32
+
     @State private var offsetX: CGFloat = 0
+    @State private var opacity: Double = 1
 
     var body: some View {
         Button {
@@ -389,18 +396,35 @@ private struct NudgeButton: View {
                 .foregroundStyle(.white)
                 .frame(width: size, height: size)
                 .offset(x: offsetX)
+                .opacity(opacity)
         }
         .buttonStyle(.plain)
+        .focusable(false)
     }
 
     private func nudge() {
-        withAnimation(.easeOut(duration: 0.08)) {
-            offsetX = direction * 5
+        guard !isAnimating else { return }
+        isAnimating = true
+
+        withAnimation(.easeIn(duration: exitDuration)) {
+            offsetX = direction * slideDistance
+            opacity = 0
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + exitDuration) {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                offsetX = -direction * slideDistance
+            }
+
+            withAnimation(.easeOut(duration: entryDuration)) {
                 offsetX = 0
+                opacity = 1
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + entryDuration) {
+                isAnimating = false
             }
         }
     }
