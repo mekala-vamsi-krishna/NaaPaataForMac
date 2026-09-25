@@ -41,6 +41,9 @@ final class MusicLibraryViewModel: ObservableObject {
     @Published private(set) var focusedSong: Song?
     @Published var pendingIntent: SongIntent?
     
+    // Library
+    @Published private(set) var librarySizeBytes: Int64 = 0
+    
     /// Current playback order. May be shuffled or in source order.
     private var queue: [Song] = []
     /// The unshuffled source list, kept so shuffle can be toggled off.
@@ -89,10 +92,14 @@ final class MusicLibraryViewModel: ObservableObject {
     func loadLibrary() async {
         isLoading = true
         defer { isLoading = false }
+
         do {
             let songs = try await libraryService.loadLibrary()
             self.songs = songs
             self.albums = Self.groupAlbums(from: songs)
+
+            // Compute total on-disk size off the main actor.
+            await refreshLibrarySize()
         } catch {
             self.errorMessage = error.localizedDescription
         }
@@ -100,6 +107,36 @@ final class MusicLibraryViewModel: ObservableObject {
 
     func refresh() async {
         await loadLibrary()
+    }
+
+    /// Reads file sizes for every song off the main actor and publishes
+    private func refreshLibrarySize() async {
+        let currentSongs = self.songs
+        let total: Int64 = await Task.detached(priority: .utility) {
+            currentSongs.reduce(into: Int64(0)) { sum, song in
+                let values = try? song.url.resourceValues(forKeys: [.fileSizeKey])
+                sum += Int64(values?.fileSize ?? 0)
+            }
+        }.value
+
+        self.librarySizeBytes = total
+    }
+    
+    var formattedLibrarySize: String {
+        guard librarySizeBytes > 0 else { return "—" }
+        return ByteCountFormatter.string(
+            fromByteCount: librarySizeBytes,
+            countStyle: .file
+        )
+    }
+
+    var formattedAverageFileSize: String {
+        guard !songs.isEmpty, librarySizeBytes > 0 else { return "—" }
+        let average = librarySizeBytes / Int64(songs.count)
+        return ByteCountFormatter.string(
+            fromByteCount: average,
+            countStyle: .file
+        )
     }
 
     func deleteSong(_ song: Song, in context: ModelContext) {

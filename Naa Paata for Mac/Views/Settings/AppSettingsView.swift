@@ -10,152 +10,72 @@ import SwiftUI
 struct AppSettingsView: View {
 
     @ObservedObject var viewModel: MusicLibraryViewModel
-
     @EnvironmentObject private var appearanceService: AppearanceService
 
+    @State private var selection: SettingsCategory? = .appearance
+    @State private var path: [SettingsCategory] = []
+
     var body: some View {
-        Form {
-            AppearanceSection(service: appearanceService)
-            NotchMediaSection(viewModel: viewModel)
-            LibrarySection(viewModel: viewModel)
-            AboutSection()
+        HStack(spacing: 0) {
+            sidebar
+            Divider()
+            detail
         }
-        .formStyle(.grouped)
-        .frame(width: 520)
-        .fixedSize(horizontal: false, vertical: true)
-    }
-}
-
-// MARK: - Notch Media
-
-private struct NotchMediaSection: View {
-
-    @ObservedObject var viewModel: MusicLibraryViewModel
-
-    @AppStorage("showNotchMedia") private var showNotchMedia = false
-
-    var body: some View {
-        Section {
-            Toggle("Show Media in Notch", isOn: $showNotchMedia)
-                .onChange(of: showNotchMedia) { _, newValue in
-                    if newValue {
-                        NotchWindowController.shared.show(viewModel: viewModel)
-                    } else {
-                        NotchWindowController.shared.hide()
-                    }
-                }
-        } header: {
-            Text("Notch Media")
-        } footer: {
-            Text("Displays playback controls at the top center of your screen. Macs without a physical notch get a simulated one.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        .frame(width: 760, height: 520)
+        .onChange(of: selection) { _, _ in
+            path.removeAll()
         }
     }
-}
 
-// MARK: - Appearance
+    // MARK: - Sidebar
 
-private struct AppearanceSection: View {
-
-    @ObservedObject var service: AppearanceService
-
-    var body: some View {
-        Section {
-            HStack(alignment: .top, spacing: 20) {
-                ForEach(AppearancePreference.allCases) { preference in
-                    AppearanceCard(
-                        preference: preference,
-                        isSelected: service.preference == preference,
-                        onSelect: { service.preference = preference }
-                    )
-                }
-                Spacer(minLength: 0)
-            }
-            .padding(.vertical, 6)
-        } header: {
-            Text("Appearance")
+    private var sidebar: some View {
+        List(SettingsCategory.allCases, selection: $selection) { category in
+            Label(category.title, systemImage: category.systemImage)
+                .tag(category)
         }
+        .listStyle(.sidebar)
+        .frame(width: 210)
     }
-}
 
-// MARK: - Library
+    // MARK: - Detail
 
-private struct LibrarySection: View {
-
-    @ObservedObject var viewModel: MusicLibraryViewModel
-
-    var body: some View {
-        Section("Library") {
-            LabeledContent("Folder") {
-                Text(viewModel.libraryFolderURL.path)
-                    .font(.callout.monospaced())
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-                    .lineLimit(2)
-                    .truncationMode(.middle)
-                    .multilineTextAlignment(.trailing)
-            }
-
-            HStack(spacing: 10) {
-                Button {
-                    viewModel.revealLibraryInFinder()
-                } label: {
-                    Label("Reveal in Finder", systemImage: "finder")
-                }
-
-                Button {
-                    Task { await viewModel.refresh() }
-                } label: {
-                    Label("Rescan Library", systemImage: "arrow.clockwise")
-                }
-                .disabled(viewModel.isLoading)
-
-                if viewModel.isLoading {
-                    ProgressView()
-                        .controlSize(.small)
-                        .padding(.leading, 4)
-                }
-
-                Spacer(minLength: 0)
-            }
-            .padding(.top, 2)
+    private var detail: some View {
+        NavigationStack(path: $path) {
+            rootPane(for: selection ?? .appearance)
         }
-    }
-}
-
-// MARK: - About
-
-private struct AboutSection: View {
-
-    private var version: String {
-        let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
-        return "\(short) (\(build))"
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    var body: some View {
-        Section("About") {
-            HStack(spacing: 12) {
-                if let icon = NSApp.applicationIconImage {
-                    Image(nsImage: icon)
-                        .resizable()
-                        .frame(width: 40, height: 40)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                }
+    // MARK: - Root of the current category
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Naa Paata")
-                        .font(.system(size: 13, weight: .semibold))
+    @ViewBuilder
+    private func rootPane(for category: SettingsCategory) -> some View {
+        switch category {
 
-                    Text("Version \(version)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+        case .appearance:
+            AppearanceSettingsView(service: appearanceService)
 
-                Spacer(minLength: 0)
-            }
-            .padding(.vertical, 4)
+        case .notch:
+            NotchSettingsView(viewModel: viewModel)
+
+        case .stats:
+            PlaceholderSettingsView(
+                category: .stats,
+                message: "Listening statistics are coming in a future update."
+            )
+
+        case .library:
+            LibrarySettingsView(viewModel: viewModel)
+
+        case .audioEngine:
+            PlaceholderSettingsView(
+                category: .audioEngine,
+                message: "Audio engine preferences are coming in a future update."
+            )
+
+        case .about:
+            AboutSettingsView()
         }
     }
 }
