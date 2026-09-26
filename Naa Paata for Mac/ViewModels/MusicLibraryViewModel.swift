@@ -27,6 +27,7 @@ final class MusicLibraryViewModel: ObservableObject {
     // Library
     @Published private(set) var songs: [Song] = []
     @Published private(set) var albums: [Album] = []
+    @Published private(set) var artists: [Artist] = []
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
 
@@ -100,6 +101,7 @@ final class MusicLibraryViewModel: ObservableObject {
             let songs = try await libraryService.loadLibrary()
             self.songs = songs
             self.albums = Self.groupAlbums(from: songs)
+            self.artists = Self.groupArtists(from: songs)
 
             // Compute total on-disk size off the main actor.
             await refreshLibrarySize()
@@ -147,6 +149,7 @@ final class MusicLibraryViewModel: ObservableObject {
             try libraryService.delete(song)
             songs.removeAll { $0.id == song.id }
             albums = Self.groupAlbums(from: songs)
+            artists = Self.groupArtists(from: songs)
             originalQueue.removeAll { $0.id == song.id }
             queue.removeAll { $0.id == song.id }
 
@@ -173,6 +176,10 @@ final class MusicLibraryViewModel: ObservableObject {
 
     func album(for song: Song) -> Album? {
         albums.first { $0.title == song.album }
+    }
+    
+    func artist(for song: Song) -> Artist? {
+        artists.first { $0.name == song.artist }
     }
 
     // MARK: - Playback entry points
@@ -537,5 +544,21 @@ final class MusicLibraryViewModel: ObservableObject {
                 )
             }
             .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+    }
+    
+    private static func groupArtists(from songs: [Song]) -> [Artist] {
+        Dictionary(grouping: songs, by: { $0.artist })
+            .map { key, value in
+                Artist(
+                    id: key,
+                    name: key,
+                    songs: value.sorted {
+                        $0.title.localizedStandardCompare($1.title) == .orderedAscending
+                    }
+                )
+            }
+            .sorted {
+                $0.name.localizedStandardCompare($1.name) == .orderedAscending
+            }
     }
 }

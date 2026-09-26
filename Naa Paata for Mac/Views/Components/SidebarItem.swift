@@ -12,6 +12,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     case songs
     case favourites
     case albums
+    case artists
     case playlists
 
     var id: String { rawValue }
@@ -22,6 +23,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .songs:      return "Songs"
         case .favourites: return "Favourites"
         case .albums:     return "Albums"
+        case .artists:    return "Artists"
         case .playlists:  return "Playlists"
         }
     }
@@ -30,9 +32,10 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         switch self {
         case .search:     return "magnifyingglass"
         case .songs:      return "music.note"
-        case .albums:     return "square.stack"
-        case .playlists:  return "music.note.list"
         case .favourites: return "heart"
+        case .albums:     return "square.stack"
+        case .artists:    return "music.mic"
+        case .playlists:  return "music.note.list"
         }
     }
 }

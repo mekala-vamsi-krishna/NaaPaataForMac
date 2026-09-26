@@ -196,12 +196,22 @@ struct HomeView: View {
                 case .albums:
                     AlbumsView(viewModel: viewModel)
 
+                case .artists:
+                    ArtistsView(viewModel: viewModel)
+                    
                 case .playlists:
                     PlaylistsView(viewModel: viewModel)
                 }
             }
             .navigationDestination(for: Album.self) { album in
                 AlbumDetailView(album: album, viewModel: viewModel)
+            }
+            .navigationDestination(for: Artist.self) { artist in
+                ArtistDetailView(
+                    artist: artist,
+                    viewModel: viewModel,
+                    router: router
+                )
             }
             .navigationDestination(for: Playlist.self) { playlist in
                 PlaylistDetailView(
