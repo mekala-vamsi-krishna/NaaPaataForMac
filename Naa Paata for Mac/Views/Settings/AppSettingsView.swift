@@ -60,10 +60,7 @@ struct AppSettingsView: View {
             NotchSettingsView(viewModel: viewModel)
 
         case .stats:
-            PlaceholderSettingsView(
-                category: .stats,
-                message: "Listening statistics are coming in a future update."
-            )
+            StatsSettingsView()
 
         case .library:
             LibrarySettingsView(viewModel: viewModel)

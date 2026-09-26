@@ -59,7 +59,10 @@ final class MusicLibraryViewModel: ObservableObject {
     private var hasRestoredSession = false
     private var lastPersistDate: Date = .distantPast
     private let persistInterval: TimeInterval = 5
-
+    
+    /// Tracks the previous elapsed value so we can compute deltas.
+    private var lastElapsedTick: TimeInterval = 0
+    
     var libraryFolderURL: URL { libraryService.libraryFolderURL }
     
     var targetSong: Song? {
@@ -220,7 +223,16 @@ final class MusicLibraryViewModel: ObservableObject {
 
     func togglePlayPause() {
         guard currentSong != nil else { return }
-        isPlaying ? playerService.pause() : playerService.play()
+
+        if isPlaying {
+            playerService.pause()
+            PlaySessionStore.shared.endCurrentSession()
+        } else {
+            playerService.play()
+            if let song = currentSong {
+                PlaySessionStore.shared.beginSession(songPath: song.url.path)
+            }
+        }
         persistState()
     }
 
@@ -378,6 +390,10 @@ final class MusicLibraryViewModel: ObservableObject {
     private func startPlayback(of song: Song) {
         currentSong = song
         focusedSong = song
+        lastElapsedTick = 0
+
+        PlaySessionStore.shared.beginSession(songPath: song.url.path)
+
         do {
             try playerService.load(url: song.url)
             applyRepeatMode()
@@ -385,9 +401,7 @@ final class MusicLibraryViewModel: ObservableObject {
         } catch {
             errorMessage = "Could not play \"\(song.title)\"."
         }
-        
         PlayHistoryStore.shared.recordPlay(song.url)
-
         persistState()
     }
     
@@ -419,7 +433,18 @@ final class MusicLibraryViewModel: ObservableObject {
 
         playerService.elapsedPublisher
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] in self?.elapsed = $0 }
+            .sink { [weak self] newElapsed in
+                guard let self else { return }
+
+                // Compute the delta. A large jump means a seek — don't count it.
+                let delta = newElapsed - self.lastElapsedTick
+                if delta > 0, delta < 2 {
+                    PlaySessionStore.shared.addDuration(delta)
+                }
+
+                self.lastElapsedTick = newElapsed
+                self.elapsed = newElapsed
+            }
             .store(in: &cancellables)
 
         playerService.trackDidFinishPublisher

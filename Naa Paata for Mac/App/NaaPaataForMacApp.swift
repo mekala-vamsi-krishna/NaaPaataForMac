@@ -25,7 +25,8 @@ struct NaaPaataForMacApp: App {
         let schema = Schema([
             Playlist.self,
             FavouriteSong.self,
-            PlayHistoryEntry.self
+            PlayHistoryEntry.self,
+            PlaySession.self
         ])
         let configuration = ModelConfiguration(schema: schema)
         let container = try! ModelContainer(
@@ -36,6 +37,7 @@ struct NaaPaataForMacApp: App {
 
         Task { @MainActor in
             PlayHistoryStore.shared.configure(with: container)
+            PlaySessionStore.shared.configure(with: container)
         }
 
         let folderService = MusicFolderService()
