@@ -12,6 +12,7 @@ struct Song: Identifiable, Hashable {
     let title: String
     let artist: String
     let album: String
+    let genre: String
     let duration: TimeInterval?
     let artworkData: Data?
     let dateAdded: Date 

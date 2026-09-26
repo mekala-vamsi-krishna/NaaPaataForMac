@@ -88,20 +88,19 @@ final class MusicLibraryService: MusicLibraryServiceProtocol {
         var title  = url.deletingPathExtension().lastPathComponent
         var artist = "Unknown Artist"
         var album  = "Unknown Album"
+        var genre  = "Unknown Genre"
         var duration: TimeInterval?
         var artworkData: Data?
-        let dateAdded: Date = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate)
-            ?? (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate)
-            ?? .distantPast
-        
+
         if let cmDuration = try? await asset.load(.duration),
            cmDuration.isNumeric {
             let seconds = CMTimeGetSeconds(cmDuration)
             if seconds.isFinite, seconds > 0 { duration = seconds }
         }
 
-        if let metadata = try? await asset.load(.commonMetadata) {
-            for item in metadata {
+        // Common metadata (title, artist, album, artwork)
+        if let commonMetadata = try? await asset.load(.commonMetadata) {
+            for item in commonMetadata {
                 guard let key = item.commonKey else { continue }
 
                 if key == .commonKeyArtwork {
@@ -124,14 +123,85 @@ final class MusicLibraryService: MusicLibraryServiceProtocol {
             }
         }
 
+        // Genre — not a common key, so scan metadata identifiers
+        if let metadata = try? await asset.load(.metadata) {
+            for item in metadata {
+                guard let identifier = item.identifier else { continue }
+
+                switch identifier {
+                case .id3MetadataContentType,
+                     .iTunesMetadataUserGenre,
+                     .quickTimeMetadataGenre,
+                     .quickTimeUserDataGenre:
+                    if let raw = try? await item.load(.stringValue) {
+                        let cleaned = Self.cleanGenre(raw)
+                        if !cleaned.isEmpty {
+                            genre = cleaned
+                        }
+                    }
+                default:
+                    break
+                }
+
+                // Stop early if we already found one.
+                if genre != "Unknown Genre" { break }
+            }
+        }
+
+        let dateAdded: Date = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate)
+            ?? (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate)
+            ?? .distantPast
+
         return Song(
             url: url,
             title: title,
             artist: artist,
             album: album,
+            genre: genre,
             duration: duration,
             artworkData: artworkData,
             dateAdded: dateAdded
         )
+    }
+
+    /// ID3v1 genres can be numeric like "(17)" or bracketed like "(17)Rock".
+    /// Strip those to get a clean string.
+    private static func cleanGenre(_ raw: String) -> String {
+        var value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Handle "(17)" or "(17)Rock" style.
+        if value.hasPrefix("(") {
+            if let close = value.firstIndex(of: ")") {
+                let after = value.index(after: close)
+                let remainder = String(value[after...])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if !remainder.isEmpty {
+                    value = remainder
+                } else {
+                    // Pure numeric — map a few common ID3v1 codes.
+                    let code = value.dropFirst().prefix(while: { $0 != ")" })
+                    value = Self.id3v1GenreName(for: String(code)) ?? ""
+                }
+            }
+        }
+
+        // Some files use "/" or ";" for multi-genre — take the first.
+        if let first = value.split(whereSeparator: { $0 == "/" || $0 == ";" }).first {
+            value = String(first).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        return value
+    }
+
+    private static func id3v1GenreName(for code: String) -> String? {
+        // Minimal mapping — expand if needed.
+        let map: [String: String] = [
+            "0": "Blues", "1": "Classical", "2": "Country", "3": "Dance",
+            "4": "Disco", "5": "Funk", "6": "Gospel", "7": "Hip-Hop",
+            "8": "Jazz", "9": "Metal", "10": "New Age", "11": "Oldies",
+            "12": "Other", "13": "Pop", "14": "R&B", "15": "Rap",
+            "16": "Reggae", "17": "Rock", "18": "Techno", "19": "Industrial"
+        ]
+        return map[code]
     }
 }

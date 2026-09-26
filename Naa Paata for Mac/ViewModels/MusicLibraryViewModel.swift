@@ -28,6 +28,7 @@ final class MusicLibraryViewModel: ObservableObject {
     @Published private(set) var songs: [Song] = []
     @Published private(set) var albums: [Album] = []
     @Published private(set) var artists: [Artist] = []
+    @Published private(set) var genres: [Genre] = []
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
 
@@ -102,6 +103,7 @@ final class MusicLibraryViewModel: ObservableObject {
             self.songs = songs
             self.albums = Self.groupAlbums(from: songs)
             self.artists = Self.groupArtists(from: songs)
+            self.genres = Self.groupGenres(from: songs)
 
             // Compute total on-disk size off the main actor.
             await refreshLibrarySize()
@@ -150,6 +152,8 @@ final class MusicLibraryViewModel: ObservableObject {
             songs.removeAll { $0.id == song.id }
             albums = Self.groupAlbums(from: songs)
             artists = Self.groupArtists(from: songs)
+            self.genres = Self.groupGenres(from: songs)
+
             originalQueue.removeAll { $0.id == song.id }
             queue.removeAll { $0.id == song.id }
 
@@ -180,6 +184,10 @@ final class MusicLibraryViewModel: ObservableObject {
     
     func artist(for song: Song) -> Artist? {
         artists.first { $0.name == song.artist }
+    }
+    
+    func genre(for song: Song) -> Genre? {
+        genres.first { $0.name == song.genre }
     }
 
     // MARK: - Playback entry points
@@ -550,6 +558,22 @@ final class MusicLibraryViewModel: ObservableObject {
         Dictionary(grouping: songs, by: { $0.artist })
             .map { key, value in
                 Artist(
+                    id: key,
+                    name: key,
+                    songs: value.sorted {
+                        $0.title.localizedStandardCompare($1.title) == .orderedAscending
+                    }
+                )
+            }
+            .sorted {
+                $0.name.localizedStandardCompare($1.name) == .orderedAscending
+            }
+    }
+    
+    private static func groupGenres(from songs: [Song]) -> [Genre] {
+        Dictionary(grouping: songs, by: { $0.genre })
+            .map { key, value in
+                Genre(
                     id: key,
                     name: key,
                     songs: value.sorted {

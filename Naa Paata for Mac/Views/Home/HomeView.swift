@@ -199,6 +199,9 @@ struct HomeView: View {
                 case .artists:
                     ArtistsView(viewModel: viewModel)
                     
+                case .genres:
+                    GenresView(viewModel: viewModel)
+                    
                 case .playlists:
                     PlaylistsView(viewModel: viewModel)
                 }
@@ -209,6 +212,13 @@ struct HomeView: View {
             .navigationDestination(for: Artist.self) { artist in
                 ArtistDetailView(
                     artist: artist,
+                    viewModel: viewModel,
+                    router: router
+                )
+            }
+            .navigationDestination(for: Genre.self) { genre in
+                GenreDetailView(
+                    genre: genre,
                     viewModel: viewModel,
                     router: router
                 )
