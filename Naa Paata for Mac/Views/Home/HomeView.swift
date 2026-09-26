@@ -160,20 +160,50 @@ struct HomeView: View {
     }
 
     private var sidebarFooter: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(spacing: 0) {
+
             Divider()
 
-            Button {
-                viewModel.revealLibraryInFinder()
-            } label: {
-                Label("Reveal Library in Finder", systemImage: "finder")
-                    .font(.caption)
-                    .lineLimit(1)
+            HStack(spacing: 12) {
+
+                // App icon
+                if let icon = NSApp.applicationIconImage {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 44, height: 44)
+                        .clipShape(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .strokeBorder(
+                                    Color.primary.opacity(0.08),
+                                    lineWidth: 0.5
+                                )
+                        )
+                        .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
+                }
+
+                // Name + tagline
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Naa Paata")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(AppColor.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+
+                    Text("Your Sound. Your World")
+                        .font(.system(size: 9, weight: .regular))
+                        .foregroundStyle(AppColor.textTertiary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+
+                Spacer(minLength: 0)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(AppColor.textSecondary)
             .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.vertical, 14)
         }
     }
 
